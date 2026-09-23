@@ -16,8 +16,10 @@ export default function Effects() {
   return (
     <EffectComposer multisampling={0}>
       {/* The threshold sits just under the prism's caustics and safely above
-          the white wordmark: only the glass blooms, the letters stay crisp. */}
-      <Bloom intensity={0.72} luminanceThreshold={0.62} luminanceSmoothing={0.24} mipmapBlur radius={0.55} />
+          the white wordmark: only the glass blooms, the letters stay crisp.
+          It is deliberately generous — the reference's stone is not a clean
+          glass body, it is a hot white mass bleeding through a violet block. */}
+      <Bloom intensity={1.15} luminanceThreshold={0.48} luminanceSmoothing={0.3} mipmapBlur radius={0.78} />
       <ChromaticAberration
         offset={offset}
         radialModulation

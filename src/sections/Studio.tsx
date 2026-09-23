@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react'
 import { site } from '../content/site'
 import { revealOnView } from '../lib/animate'
+import WaveText from '../components/WaveText'
 import './Studio.css'
 
 export default function Studio() {
@@ -49,11 +50,13 @@ export default function Studio() {
               {site.studio.team.map((member, index) => (
                 <li
                   key={member.name}
-                  className="studio__member"
+                  className="studio__member wave-hover"
                   data-reveal
                   style={{ '--d': index } as CSSProperties}
                 >
-                  <span className="studio__member-name">{member.name}</span>
+                  <span className="studio__member-name">
+                    <WaveText text={member.name} />
+                  </span>
                   <span className="u-mono studio__member-role">{member.role}</span>
                 </li>
               ))}

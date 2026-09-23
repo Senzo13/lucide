@@ -18,6 +18,31 @@
 
 .scene-layer--front {
   z-index: var(--z-fore);
+  /* The prism is the key visual's subject, not a permanent sticker: once the
+     hero pin is over the front canvas has to let go, or the glass keeps
+     floating through the news, the project banners and the footer — over the
+     very copy those chapters are there to show. The back canvas (room, wall
+     lettering, banners) never fades. */
+  opacity: clamp(0, calc((1.02 - var(--hero-p, 0)) / 0.18), 1);
+}
+
+/* The gem's canvas fades itself in as soon as it has painted its first frame,
+   so the stone and its texture are already there when the intro curtain lifts
+   instead of arriving on their own a beat later. The fade lives on the canvas,
+   not on the layer, so it never lags the scroll-driven opacity above. */
+.scene-layer--front canvas {
+  opacity: 0;
+  transition: opacity 0.75s var(--ease-out);
+}
+
+.scene-layer--front[data-ready='true'] canvas {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-layer--front canvas {
+    transition: none;
+  }
 }
 
 .scene-layer--back {

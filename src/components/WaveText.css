@@ -1,0 +1,51 @@
+/* --------------------------------------------------------------------------
+   The wave. A letter is lifted, the next one a beat later, and so on down the
+   phrase: hovering a row sends a ripple through its title, and letting go
+   sends it back. Delays live on the transition, so both directions travel.
+   -------------------------------------------------------------------------- */
+.wave {
+  display: inline;
+}
+
+.wave__word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.wave__letter {
+  display: inline-block;
+  transform: translateY(0);
+  will-change: transform;
+}
+
+/* a crest travels once through the phrase: each letter rises and settles back,
+   the next one a beat later — the same ripple on the way out of the hover */
+@keyframes wave-pass {
+  0% {
+    transform: translateY(0);
+  }
+  38% {
+    transform: translateY(-0.2em);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+a:hover .wave__letter,
+button:hover .wave__letter,
+a:focus-visible .wave__letter,
+button:focus-visible .wave__letter,
+.wave-hover:hover .wave__letter {
+  animation: wave-pass 1s var(--ease-out) calc(var(--i, 0) * 28ms) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a:hover .wave__letter,
+  button:hover .wave__letter,
+  a:focus-visible .wave__letter,
+  button:focus-visible .wave__letter,
+  .wave-hover:hover .wave__letter {
+    animation: none;
+  }
+}

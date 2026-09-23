@@ -4,6 +4,7 @@ import * as THREE from 'three'
 import { pointer, ease } from './pointer'
 import { useAppStore } from '../store/useAppStore'
 import { blendPalette, createPalette } from './palette'
+import { createRoom, sampleRoom } from './mood'
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -50,6 +51,7 @@ const fragmentShader = /* glsl */ `
   uniform float uTileW;
   uniform float uTileH;
   uniform float uTileGain;
+  uniform vec3  uTile;
   uniform float uStreak;
   uniform float uSheet;
   uniform float uVignette;
@@ -65,11 +67,19 @@ const fragmentShader = /* glsl */ `
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
   }
 
-  /* anti-aliased distance (in cells) to the nearest grid line of either axis */
+  /* Anti-aliased distance (in cells) to the nearest grid line of either axis.
+     The second factor is what keeps the wall dark: near the horizon a cell
+     shrinks below one pixel, and a naive mask then reports "line" for every
+     pixel in that band, fusing the whole grid into a grey haze. Fading the
+     mask with the cell's own coverage makes the lines dissolve into their
+     average ink instead — which is what the eye expects. */
   float gridMask(vec2 p, float cell) {
     vec2 c = p / cell;
-    vec2 g = abs(fract(c - 0.5) - 0.5) / max(fwidth(c), vec2(1e-6));
-    return 1.0 - clamp(min(g.x, g.y) / 1.15, 0.0, 1.0);
+    vec2 w = max(fwidth(c), vec2(1e-6));
+    vec2 g = abs(fract(c - 0.5) - 0.5) / w;
+    float line = 1.0 - clamp(min(g.x, g.y) / 1.15, 0.0, 1.0);
+    float cover = clamp(1.0 / max(w.x, w.y), 0.0, 1.0);
+    return line * cover;
   }
 
   vec3 rayDirection(vec2 uv) {
@@ -134,22 +144,35 @@ const fragmentShader = /* glsl */ `
         majorMask += maj * 1.0 * fade;
 
         /* mosaic: big dark panels, each lit a little differently, crossed by
-           a soft diagonal sheen — the tiled wall of the key visual */
+           a soft diagonal sheen — the tiled wall of the key visual. The
+           variation is deliberately shallow: the reference's wall is a flat
+           dark sheet of squares, not a patchwork of different colours. */
         vec2 cell = floor(vec2(u / uTileW, v / uTileH));
         float h = hash21(cell);
         float sheen = sin((u * 0.16 + v * 0.42) + h * 6.2831);
-        float grain = hash21(floor(vec2(u, v) * 26.0) + h);
-        tiles += (h - 0.5) * 0.7 + sheen * 0.12 * (0.4 + h) + (grain - 0.5) * 0.22;
+        tiles += (h - 0.5) * 0.3 + sheen * 0.05 * (0.4 + h);
 
         /* the joint between two panels, so the mosaic reads as built rather
            than as a texture stretched over the wall */
         vec2 edge = abs(fract(vec2(u / uTileW, v / uTileH) + 0.5) - 0.5) * vec2(uTileW, uTileH);
-        seams += (1.0 - clamp(min(edge.x, edge.y) / 0.035, 0.0, 1.0)) * fade;
+        seams += (1.0 - clamp(min(edge.x, edge.y) / 0.055, 0.0, 1.0)) * fade;
 
-        /* wide light shafts sweeping across the wall */
-        float s1 = smoothstep(0.25, 1.0, sin(u * 0.055 + v * 0.26 + h * 1.7) * 0.5 + 0.5);
-        float s2 = smoothstep(0.4, 1.0, sin(u * 0.021 - v * 0.18 + 2.1) * 0.5 + 0.5);
-        band += (s1 * 0.7 + s2 * 0.6) * fade;
+        /* Light falling on the wall. The reference does not relight the room
+           evenly: whole blocks of panels catch the light while their
+           neighbours stay black, which is what makes the key visual read as
+           patches of white on a black room rather than as a grey fog. The
+           blocks are bound to the mosaic, so the light travels *with* the
+           wall, and a slow crawl keeps the room alive while nothing moves. */
+        vec2 bp = vec2(u / (uTileW * 1.5) + uTime * 0.012, v / (uTileH * 1.5) - uTime * 0.004);
+        vec2 bf = fract(bp);
+        float bh = hash21(floor(bp) + 4.3);
+        float box = smoothstep(0.02, 0.24, bf.x) * (1.0 - smoothstep(0.76, 0.98, bf.x))
+                  * smoothstep(0.02, 0.24, bf.y) * (1.0 - smoothstep(0.76, 0.98, bf.y));
+        band += box * step(0.58, bh) * 1.5 * fade;
+
+        /* one very slow wash travelling the length of the wall, so the light
+           level never sits perfectly still */
+        band += smoothstep(0.72, 1.0, sin(u * 0.9 + v * 1.6 - uTime * 0.05) * 0.5 + 0.5) * 0.18 * fade;
 
         glow += exp(-t * 0.06) * 0.22 * fade;
         near = max(near, fade);
@@ -163,12 +186,22 @@ const fragmentShader = /* glsl */ `
 
     /* the room's air ----------------------------------------------------- */
     vec3 color = uBase;
-    color *= 1.0 - clamp(tiles, -0.6, 0.6) * uTileGain * 0.85;
-    color *= 1.0 - clamp(seams, 0.0, 1.0) * uTileGain * 0.5;
+    /* The mosaic *is* the room: every panel is lit by the same light (uTile,
+       which is the room's own colour) but never quite at the same level, and
+       the joints between them stay dark. This is the surface that changes
+       colour when the room is relit — not a wash laid over the whole frame. */
+    float panel = clamp(1.0 - seams, 0.0, 1.0);
+    color += uTile * panel * uTileGain * (0.62 + clamp(tiles, -0.5, 0.5) * 1.1);
+    color *= 1.0 - clamp(tiles, -0.6, 0.6) * uTileGain * 0.35;
+    color *= 1.0 - clamp(seams, 0.0, 1.0) * uTileGain * 0.95;
 
     color += uLine * clamp(structure, 0.0, 1.4) * uLineGain;
     color += uMajor * clamp(majorMask, 0.0, 1.4) * uMajorGain;
-    color += uBase * 0.5 * clamp(band, 0.0, 2.0) * uStreak;
+    /* the shafts are *light*, not a tint of the wall: the reference's key
+       visual is carried by wide white beams raking across the black tiles.
+       They are multiplied by the mosaic, so the light stays *on* the panels
+       instead of dissolving the surface it is falling on. */
+    color += mix(uLine, vec3(1.0), 0.55) * clamp(band, 0.0, 2.0) * uStreak * 0.26 * (0.3 + 0.7 * panel);
     color += uGlow * clamp(glow * 0.07, 0.0, 1.0) * uGlowGain;
 
     /* violet bloom sitting on the horizon, behind the prism */
@@ -208,6 +241,9 @@ export default function Backdrop() {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   const { camera, size } = useThree()
   const palette = useMemo(() => createPalette(), [])
+  const room = useMemo(() => createRoom(), [])
+  /** last time the room was published to CSS (the DOM wash rides the room) */
+  const publishedAt = useRef(-1)
 
   const uniforms = useMemo(
     () => ({
@@ -229,6 +265,7 @@ export default function Backdrop() {
       uTileW: { value: 5.2 },
       uTileH: { value: 3.1 },
       uTileGain: { value: 0.5 },
+      uTile: { value: new THREE.Color('#1b1b1b') },
       uStreak: { value: 1 },
       uSheet: { value: 0 },
       uVignette: { value: 1 },
@@ -252,6 +289,12 @@ export default function Backdrop() {
     const hero = store.scroll.heroProgress
     const { travel } = store.env
     blendPalette(store.env, palette)
+    sampleRoom(state.clock.elapsedTime, room)
+    /* The section ladder still owns the *structure* of the room (how fine the
+       grid is, how far it dissolves, whether it is paper), but the colour is
+       the room's: it turns every couple of seconds, everywhere at once. Paper
+       keeps its own ink — a coloured wash over a light sheet reads as a stain. */
+    const dark = 1 - palette.sheet
 
     /* The room travels with the camera: the cylinder is centred on it, so the
        wall always wraps around the view and the vanishing point stays put
@@ -270,10 +313,10 @@ export default function Backdrop() {
     uniforms.uHero.value = hero
     uniforms.uWallOff.value = travel * 9
 
-    uniforms.uBase.value.copy(palette.base)
-    uniforms.uLine.value.copy(palette.line)
-    uniforms.uMajor.value.copy(palette.major)
-    uniforms.uGlow.value.copy(palette.glow)
+    uniforms.uBase.value.copy(palette.base).lerp(room.base, dark)
+    uniforms.uLine.value.copy(palette.line).lerp(room.line, dark)
+    uniforms.uMajor.value.copy(palette.major).lerp(room.major, dark)
+    uniforms.uGlow.value.copy(palette.glow).lerp(room.glow, dark)
     uniforms.uCell.value = palette.cell
     uniforms.uMajorCell.value = palette.majorCell
     uniforms.uFogK.value = palette.fogK
@@ -283,11 +326,28 @@ export default function Backdrop() {
     uniforms.uTileW.value = palette.tileW
     uniforms.uTileH.value = palette.tileH
     uniforms.uTileGain.value = palette.tileGain
+    /* the panels take the room's light (dimmed), and keep their own ink on the
+       light sheet where a coloured wash would read as a stain */
+    uniforms.uTile.value.copy(palette.base).lerp(room.panel, dark)
     uniforms.uStreak.value = palette.streak
     uniforms.uSheet.value = palette.sheet
     uniforms.uVignette.value = palette.vignette
     uniforms.uRadius.value = palette.radius
     uniforms.uFloorY.value = palette.floorY
+    /* The DOM scrim takes the room's light too: the page's own wash turns with
+       the backdrop, so the whole frame changes colour and not just the canvas.
+       Throttled to ~10 writes a second — during a crossfade that is enough for
+       the naked eye, and it keeps the style engine out of the frame loop. */
+    const now = state.clock.elapsedTime
+    if (now - publishedAt.current > 0.09 || publishedAt.current < 0) {
+      publishedAt.current = now
+      const hex = room.line.getHex(THREE.SRGBColorSpace)
+      const style = document.documentElement.style
+      style.setProperty('--room-r', String((hex >> 16) & 255))
+      style.setProperty('--room-g', String((hex >> 8) & 255))
+      style.setProperty('--room-b', String(hex & 255))
+      style.setProperty('--room-a', dark.toFixed(3))
+    }
   })
 
   return (

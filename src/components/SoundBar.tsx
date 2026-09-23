@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { audio, blip } from '../lib/audio'
 import { site } from '../content/site'
 import { useAppStore } from '../store/useAppStore'
+import WaveText from './WaveText'
 import './SoundBar.css'
 
 const EQ_BARS = 5
@@ -55,14 +56,16 @@ export default function SoundBar() {
           <>
             <button type="button" className="u-pill sound-bar__on" onClick={activate}>
               <span className="u-pill__inner">
-                <span>{site.sound.on}</span>
+                <span>
+                  <WaveText text={site.sound.on} />
+                </span>
                 <span className="u-pill__hover" aria-hidden="true">
                   {site.sound.on}
                 </span>
               </span>
             </button>
             <button type="button" className="u-underline sound-bar__off" onClick={skip}>
-              {site.sound.off}
+              <WaveText text={site.sound.off} />
             </button>
           </>
         ) : (
@@ -75,7 +78,7 @@ export default function SoundBar() {
               decideAudio('off')
             }}
           >
-            COUPER LE SON
+            <WaveText text="COUPER LE SON" />
           </button>
         )}
       </div>

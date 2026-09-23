@@ -77,6 +77,15 @@ visuelle de référence.
   `data-world` sur `<html>` et les jetons d'encre/surface s'inversent
   (`src/styles/global.css`), comme la feuille blanche du site de référence.
 
+## Projets : un index, pas une scène
+
+Le chapitre projets est une liste éditoriale : une ligne par projet (numéro,
+date, nom, client, résumé, tags), séparée par des filets, révélée au scroll.
+Les écrans 3D qui tournaient dans la scène WebGL ont été supprimés — la
+carrière de cartes ne tenait pas sans les visuels du site de référence, et
+tout le chapitre pinnait sept écrans de scroll pour rien. La page est passée
+de ~14 700 px à ~10 200 px.
+
 ## Stack
 
 React 19 · TypeScript strict · Vite · three.js · @react-three/fiber ·

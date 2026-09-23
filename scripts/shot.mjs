@@ -29,6 +29,10 @@ const mobile = args.includes('--mobile')
 /** `ask` keeps the sound-consent bar visible (reference comparison),
  *  `off` answers "continue without sound" so the bar collapses. */
 const consent = getArg('consent', 'ask')
+/** optional CSS selector to hover before each shot (hover-state QA) */
+const hover = getArg('hover', '')
+/** ms to wait after the hover before shooting (catch a transition mid-flight) */
+const hoverWait = Number(getArg('hoverWait', '900'))
 /** optional `x,y,w,h` crop, applied to every shot — for pixel-level QA */
 const clipArg = getArg('clip', '')
 const clip = clipArg
@@ -111,6 +115,10 @@ for (const target of targets) {
     await page.evaluate((y) => window.scrollTo(0, Number(y)), target)
   }
   await page.waitForTimeout(1800)
+  if (hover) {
+    await page.hover(hover).catch(() => problems.push(`[warn] hover target not found: ${hover}`))
+    await page.waitForTimeout(hoverWait)
+  }
   const file = path.join(outDir, `${tag}-${target.replace(/[#/]/g, '') || 'top'}.png`)
   await page.screenshot({ path: file, ...(clip ? { clip } : {}) })
   report.shots.push(file)

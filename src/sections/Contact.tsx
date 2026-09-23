@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { site } from '../content/site'
 import { revealOnView } from '../lib/animate'
+import WaveText from '../components/WaveText'
 import './Contact.css'
 
 const schema = z.object({
@@ -193,7 +194,9 @@ export default function Contact() {
             <div className="contact__form-foot">
               <button type="submit" className="u-pill contact__submit" disabled={sending} data-cursor="hover">
                 <span className="u-pill__inner">
-                  <span>{sending ? 'ENVOI…' : 'ENVOYER'}</span>
+                  <span>
+                    <WaveText text={sending ? 'ENVOI…' : 'ENVOYER'} />
+                  </span>
                   <span className="u-pill__hover" aria-hidden="true">
                     {sending ? 'ENVOI…' : 'ENVOYER'}
                   </span>

@@ -1,88 +1,80 @@
-/* The projects chapter pins the viewport: the WebGL carousel turns behind this
-   stage while the caption swaps from one project to the next. */
-.works {
+/* Projects — an index, not a stage. One ruled row per project; the row reads
+   left to right (number, date, name, client, summary, tags) and a hairline
+   separates it from the next one. */
+.works__list {
+  border-top: 1px solid var(--line);
+  /* the realtime HUD owns the top-right corner of the page, so the index — the
+     summary column in particular — stops before it instead of printing under
+     the dial (same reserve as `.s-head`) */
+  padding-right: clamp(0px, 12vw, 168px);
+}
+
+.works__item {
   position: relative;
-}
-
-.works__stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  height: 100svh;
-  padding: 0 var(--pad-x) calc(var(--bar-h) + 26px);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  pointer-events: none;
-}
-
-.works__head {
-  position: absolute;
-  top: clamp(84px, 12vh, 130px);
-  left: var(--pad-x);
-  right: var(--pad-x);
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
+  grid-template-columns: 58px 118px minmax(0, 1fr) 22px;
+  align-items: start;
   gap: var(--gap);
-  color: var(--ink-dim);
+  padding: clamp(22px, 3.4vh, 40px) 0;
+  border-bottom: 1px solid var(--line);
+  transition: border-color 0.5s var(--ease-out);
 }
 
-.works__kicker {
-  color: var(--ink);
+.works__item:hover {
+  border-bottom-color: var(--line-strong);
 }
 
-.works__caption {
-  max-width: min(52ch, 46vw);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  pointer-events: auto;
-  animation: work-caption-in 0.9s var(--ease-out) both;
-}
-
-@keyframes work-caption-in {
-  from {
-    opacity: 0;
-    transform: translateY(22px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
+.works__index,
 .works__date {
   color: var(--ink-faint);
+  padding-top: 6px;
+}
+
+.works__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 30ch);
+  align-items: start;
+  column-gap: clamp(24px, 4vw, 72px);
+  row-gap: 10px;
 }
 
 .works__title {
   font-family: var(--font-display);
   font-weight: 900;
   font-variation-settings: 'wdth' 106, 'wght' 900;
-  font-size: clamp(38px, 5.4vw, 96px);
-  line-height: 0.9;
+  font-size: clamp(30px, 3.6vw, 62px);
+  line-height: 0.92;
   letter-spacing: -0.03em;
   text-transform: uppercase;
-  color: #fff;
+  /* `--ink`, not white: on the blueprint sheet the page inverts and a
+     hard-coded white title disappears into the paper. */
+  color: var(--ink);
+  transition: transform 0.6s var(--ease-out);
+}
+
+.works__item:hover .works__title {
+  transform: translateX(10px);
 }
 
 .works__client {
+  grid-column: 1;
   color: var(--ink-dim);
   text-transform: uppercase;
 }
 
 .works__summary {
-  max-width: 46ch;
+  grid-column: 2;
+  grid-row: 1 / span 2;
   font-size: var(--fs-body);
   color: var(--ink-dim);
 }
 
 .works__tags {
+  grid-column: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .works__tag {
@@ -92,71 +84,58 @@
   text-transform: uppercase;
 }
 
-.works__more {
+/* the project's own colour, as a tab on the ruling — the accent appears here
+   and nowhere else, so the index stays monochrome until you look at it */
+.works__mark {
   position: absolute;
-  right: var(--pad-x);
-  bottom: calc(var(--bar-h) + 30px);
-  color: var(--ink-dim);
+  left: 0;
+  bottom: -1px;
+  width: 0;
+  height: 1px;
+  background: var(--accent, var(--violet-bright));
+  transition: width 0.6s var(--ease-out);
 }
 
-.works__index {
-  position: absolute;
-  right: var(--pad-x);
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-align: right;
-  color: var(--ink-faint);
+.works__item:hover .works__mark {
+  width: 100%;
 }
 
-.works__index-item {
-  opacity: 0.4;
-  transition: opacity 0.5s var(--ease-out), color 0.5s var(--ease-out), transform 0.5s var(--ease-out);
-}
+@media (max-width: 1100px) {
+  .works__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
 
-.works__index-item[data-active='true'] {
-  opacity: 1;
-  color: #fff;
-  transform: translateX(-6px);
+  .works__summary {
+    grid-column: 1;
+    grid-row: auto;
+    max-width: 62ch;
+  }
 }
 
 @media (max-width: 900px) {
-  .works {
-    height: auto !important;
+  .works__list {
+    padding-right: 0;
   }
 
-  .works__stage {
-    position: relative;
-    height: auto;
-    min-height: 100svh;
-    padding-top: 26vh;
-    gap: 26px;
-    justify-content: center;
-  }
-
-  .works__head {
-    position: static;
-  }
-
-  .works__caption {
-    max-width: 100%;
+  .works__item {
+    grid-template-columns: 40px minmax(0, 1fr);
+    row-gap: 6px;
   }
 
   .works__index,
-  .works__more {
+  .works__date {
+    padding-top: 0;
+  }
+
+  .works__date {
+    grid-column: 2;
+  }
+
+  .works__body {
+    grid-column: 1 / -1;
+  }
+
+  .works__mark {
     display: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .works {
-    height: auto !important;
-  }
-
-  .works__stage {
-    position: relative;
-    height: auto;
   }
 }

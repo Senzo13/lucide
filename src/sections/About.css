@@ -32,11 +32,11 @@
 
 /* the blueprint sheet: the same chapter, printed as ink on paper */
 html[data-world='blueprint'] .about__line:nth-child(2) {
-  -webkit-text-stroke: 1px rgba(11, 9, 32, 0.5);
+  -webkit-text-stroke: 1px rgba(16, 16, 17, 0.5);
 }
 
 html[data-world='blueprint'] .about__line:nth-child(3) {
-  background: linear-gradient(90deg, #0b0920 0%, #6d28d9 54%, #0e7490 100%);
+  background: linear-gradient(90deg, #101011 0%, #b92914 54%, #ff3b23 100%);
   -webkit-background-clip: text;
   background-clip: text;
 }

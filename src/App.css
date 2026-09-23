@@ -14,23 +14,39 @@
      deep and readable instead of being buried under a black overlay. */
   opacity: clamp(0.42, calc(1.06 - var(--hero-p, 0) * 0.78), 1);
   background:
+    /* The room's light, published by the WebGL backdrop as `--room-*`. This is
+       the page answering the backdrop: when the wall is relit every couple of
+       seconds, the DOM scrim takes the same colour in the same breath, so the
+       whole frame turns together. `--room-a` keeps the light sheet clean. */
+    radial-gradient(
+      130% 95% at 50% 56%,
+      rgb(var(--room-r) var(--room-g) var(--room-b) / calc(var(--room-a, 1) * 0.18)) 0%,
+      rgb(var(--room-r) var(--room-g) var(--room-b) / 0) 72%
+    ),
+    /* the neutral tint of the world the camera is in: the reference's grade is
+       black and white, so the wash is grey rather than violet */
+    radial-gradient(
+      126% 86% at 50% 44%,
+      rgb(var(--tint-r) var(--tint-g) var(--tint-b) / 0.05) 0%,
+      rgb(var(--tint-r) var(--tint-g) var(--tint-b) / 0) 62%
+    ),
     /* corner vignette — the reference frame is almost black in the corners */
     radial-gradient(
       108% 74% at 50% 46%,
-      rgba(5, 3, 15, 0) 26%,
-      rgba(5, 3, 15, 0.42) 62%,
-      rgba(3, 2, 10, 0.78) 86%,
-      rgba(2, 1, 7, 0.95) 100%
+      rgba(6, 6, 7, 0) 26%,
+      rgba(6, 6, 7, 0.42) 62%,
+      rgba(4, 4, 5, 0.78) 86%,
+      rgba(3, 3, 4, 0.95) 100%
     ),
     /* top + bottom rolloff keeps the HUD legible over the grid */
     linear-gradient(
       180deg,
-      rgba(4, 2, 12, 0.86) 0%,
-      rgba(4, 2, 12, 0.28) 12%,
-      rgba(5, 3, 15, 0) 34%,
-      rgba(5, 3, 15, 0) 58%,
-      rgba(4, 2, 12, 0.62) 84%,
-      rgba(3, 2, 10, 0.94) 100%
+      rgba(5, 5, 6, 0.86) 0%,
+      rgba(5, 5, 6, 0.28) 12%,
+      rgba(6, 6, 7, 0) 34%,
+      rgba(6, 6, 7, 0) 58%,
+      rgba(5, 5, 6, 0.62) 84%,
+      rgba(4, 4, 5, 0.94) 100%
     );
   transition: background 0.9s var(--ease-out);
 }
@@ -53,6 +69,39 @@ html[data-world='blueprint'] .app-shade {
       rgba(232, 230, 243, 0.45) 86%,
       rgba(228, 226, 241, 0.78) 100%
     );
+}
+
+/* The content wash.
+   The room is the subject of the key visual and the background of every other
+   chapter; these two roles need different amounts of it. `--content-p` (written
+   by App.tsx as chapters take over the viewport) drives this layer in for the
+   editorial sections, so the grid and the wall lettering sit *behind* the
+   reading instead of through it — the way the reference lets its hall fall away
+   once a screen or a manifesto is the thing in front. */
+.app-wash {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-shade) + 1);
+  pointer-events: none;
+  opacity: var(--content-p, 0);
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 6, 0.62) 0%,
+    rgba(5, 5, 6, 0.5) 30%,
+    rgba(6, 6, 7, 0.5) 68%,
+    rgba(4, 4, 5, 0.66) 100%
+  );
+  transition: background 0.9s var(--ease-out);
+}
+
+html[data-world='blueprint'] .app-wash {
+  background: linear-gradient(
+    180deg,
+    rgba(233, 231, 224, 0.66) 0%,
+    rgba(234, 232, 226, 0.52) 30%,
+    rgba(234, 232, 226, 0.52) 68%,
+    rgba(230, 228, 221, 0.7) 100%
+  );
 }
 
 .app-main {

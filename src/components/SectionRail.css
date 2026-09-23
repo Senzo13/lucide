@@ -99,10 +99,10 @@
 }
 
 html[data-world='blueprint'] .rail {
-  color: rgba(11, 9, 32, 0.55);
+  color: rgba(16, 16, 17, 0.55);
 }
 
 html[data-world='blueprint'] .rail__cursor {
-  background: #0b0920;
+  background: #101011;
   box-shadow: none;
 }

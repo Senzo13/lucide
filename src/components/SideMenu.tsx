@@ -2,6 +2,7 @@ import { useEffect, type MouseEvent as ReactMouseEvent } from 'react'
 import { site } from '../content/site'
 import { stopScroll, scrollToSection } from '../lib/scroll'
 import { useAppStore } from '../store/useAppStore'
+import WaveText from './WaveText'
 import './SideMenu.css'
 
 const ENTRIES = [...site.nav, site.cta]
@@ -48,7 +49,9 @@ export default function SideMenu() {
               tabIndex={menuOpen ? 0 : -1}
             >
               <span className="u-mono side-menu__index">{String(index + 1).padStart(2, '0')}</span>
-              <span className="u-display side-menu__label">{entry.label}</span>
+              <span className="u-display side-menu__label">
+                <WaveText text={entry.label} />
+              </span>
               <span className="side-menu__arrow" aria-hidden="true">
                 →
               </span>

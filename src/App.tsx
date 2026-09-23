@@ -19,13 +19,11 @@ import Footer from './sections/Footer'
 import { initSmoothScroll, destroySmoothScroll, ScrollTrigger } from './lib/scroll'
 import { stopScroll } from './lib/scroll'
 import { useAppStore, WORLD_BY_SECTION, type WorldMode } from './store/useAppStore'
+import { WORLD_TINT } from './store/useAppStore'
 import './App.css'
 
 /** one measured section of the journey ladder (DOM order = scroll order) */
 type LadderStep = { id: string; center: number; top: number; height: number; mode: WorldMode }
-
-/** sections that run their own pinned choreography, publishing 0 → 1 progress */
-const PINNED = ['projets']
 
 function smoothstep(t: number) {
   const x = Math.min(1, Math.max(0, t))
@@ -83,6 +81,11 @@ export default function App() {
     let raf = 0
     let lastEmit = 0
     let lastVar = -1
+    let lastTint = ''
+    let lastTick = performance.now()
+    /* how much an editorial chapter — rather than the key visual — owns the
+       viewport; eased in the loop so it never snaps at a section boundary */
+    let content = 0
     let ladder: LadderStep[] = []
 
     /* Measure the journey ladder: every section becomes a world the camera
@@ -159,18 +162,39 @@ export default function App() {
       }
       useAppStore.getState().setEnv({ from, to, mix, travel: progress, center })
 
-      /* Pinned chapters publish their own 0 → 1 progress so the WebGL layers
-         can run a whole choreography inside one section (the project carousel,
-         for instance) without listening to scroll events. */
-      if (ladder.length) {
-        for (const id of PINNED) {
-          const step = ladder.find((s) => s.id === id)
-          if (!step) continue
-          const span = Math.max(1, step.height - viewport)
-          const raw = (y - step.top) / span
-          useAppStore.getState().setChapter(id, Math.min(1.6, Math.max(-0.6, raw)))
-        }
+      /* The DOM gets the same colour journey as the room: the two worlds the
+         viewport sits between are blended into one tint, published as RGB so
+         every scrim, rule and selection on the page drifts with the camera. */
+      const tintA = WORLD_TINT[from] ?? WORLD_TINT.space
+      const tintB = WORLD_TINT[to] ?? tintA
+      const tint = [
+        Math.round(tintA[0] + (tintB[0] - tintA[0]) * mix),
+        Math.round(tintA[1] + (tintB[1] - tintA[1]) * mix),
+        Math.round(tintA[2] + (tintB[2] - tintA[2]) * mix),
+      ] as const
+      const tintKey = tint.join(' ')
+      if (tintKey !== lastTint) {
+        lastTint = tintKey
+        const rootStyle = document.documentElement.style
+        rootStyle.setProperty('--tint-r', String(tint[0]))
+        rootStyle.setProperty('--tint-g', String(tint[1]))
+        rootStyle.setProperty('--tint-b', String(tint[2]))
       }
+
+      /* The room is the subject of the key visual and the background of
+         everything else. This is the value that tells the two apart: it ramps
+         up as a content chapter centres, and the page answers with a content
+         wash (see `.app-wash`) so the grid stops crossing the copy. */
+      let nearestStep = ladder[0]
+      for (const step of ladder) {
+        if (Math.abs(step.center - center) < Math.abs(nearestStep.center - center)) nearestStep = step
+      }
+      const focus =
+        !nearestStep || nearestStep.mode === 'space' ? 0 : nearestStep.mode === 'outro' ? 0.6 : 1
+      const dt = Math.min(0.25, (now - lastTick) / 1000)
+      lastTick = now
+      content += (focus - content) * Math.min(1, dt * 4)
+      document.documentElement.style.setProperty('--content-p', content.toFixed(4))
 
       const nearest = mix < 0.5 ? from : to
       const root = document.documentElement
@@ -208,6 +232,7 @@ export default function App() {
     <div className="app">
       <Scene />
       <div className="app-shade" aria-hidden="true" />
+      <div className="app-wash" aria-hidden="true" />
       <Scanlines />
       <Header />
       <SideMenu />

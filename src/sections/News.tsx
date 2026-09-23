@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties, type MouseEvent as ReactMouseEve
 import { site } from '../content/site'
 import { revealOnView } from '../lib/animate'
 import { scrollToSection } from '../lib/scroll'
+import WaveText from '../components/WaveText'
 import './News.css'
 
 export default function News() {
@@ -36,7 +37,9 @@ export default function News() {
               >
                 <span className="u-mono news__index">{String(index + 1).padStart(2, '0')}</span>
                 <span className="u-mono news__date">{item.date}</span>
-                <h3 className="news__title">{item.title}</h3>
+                <h3 className="news__title">
+                  <WaveText text={item.title} />
+                </h3>
                 <span className="news__arrow" aria-hidden="true">
                   →
                 </span>

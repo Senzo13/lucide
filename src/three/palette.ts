@@ -93,22 +93,27 @@ const make = (
 
 /**
  * Ordered from the hero to the footer — every section picks one. The values are
- * read off the reference screenshots: a black room whose wall is a mosaic of
- * big dark panels crossed by wide light streaks at the top, then the same room
- * with a much finer pale grid and amber rules, then paper, then the black
- * technical grid of the outro.
+ * read off the reference screenshots: a **black and white** room whose wall is
+ * a mosaic of dark panels crossed by wide white shafts, then the same room
+ * colder and finer, then the light blueprint sheet, then the black technical
+ * grid of the outro.
+ *
+ * Every dark world stays on the neutral axis (`line`, `major` and `glow` are
+ * greys, not hues): the colour of the page is the room's *mood* — one slow red
+ * drift per cycle, never a tint per section. That is what keeps the backdrop
+ * from changing colour and elements as the visitor scrolls.
  */
 export const PALETTES: Record<WorldMode, Palette> = {
-  /** key visual: black mosaic wall, wide streaks, pale blue rules */
+  /** key visual: the reference itself — black tiled wall, white rules, white shafts */
   space: make(
-    '#030304', '#8d97c8', '#c8743a', '#4b3aa8',
-    0.62, 4.96, 0.028, 0.36, 0.4, 0.34,
-    5.2, 3.1, 0.44, 1.15, 0, 1, 7.6, -1.5, 0.05,
+    '#040405', '#cfcfcf', '#ffffff', '#8e8e8e',
+    0.46, 4.6, 0.028, 0.28, 0.3, 0.3,
+    2.6, 1.7, 0.5, 1.15, 0, 1, 7.6, -1.5, 0.05,
   ),
-  /** news + projects: the camera sinks into the electric hall of the reference */
+  /** news + projects: the camera sinks deeper into the same cold room */
   hall: make(
-    '#050510', '#9aa6d8', '#e08a3c', '#5b4bd0',
-    0.44, 3.52, 0.05, 0.66, 0.76, 0.6,
+    '#040506', '#c9cfd8', '#ffffff', '#7d8590',
+    0.44, 3.52, 0.05, 0.56, 0.66, 0.56,
     3.2, 1.9, 0.26, 0.5, 0, 1, 8.4, -1.5, 0.15,
   ),
   /** manifesto: the same room as a light blueprint sheet — ink on paper */
@@ -117,16 +122,16 @@ export const PALETTES: Record<WorldMode, Palette> = {
     0.34, 2.72, 0.05, 0.5, 0.8, 0.3,
     2.4, 1.5, 0.16, 0, 1, 0.22, 8.4, -1.5, 0.14,
   ),
-  /** studio + contact: back to black, tight technical grid */
+  /** studio + contact: the room flattens — a technical grid with no temperature */
   grid: make(
-    '#030307', '#7d89c8', '#c07a3c', '#4638a8',
-    0.32, 2.56, 0.045, 0.55, 0.55, 0.5,
+    '#040607', '#ccd2d2', '#f1eade', '#7c8385',
+    0.32, 2.56, 0.045, 0.54, 0.48, 0.48,
     2.4, 1.5, 0.16, 0.24, 0, 1, 8.8, -1.5, 0.11,
   ),
-  /** outro: the room has almost dissolved */
+  /** outro: the room has almost dissolved, and holds its red dusk */
   outro: make(
-    '#010103', '#5a63a0', '#8a5a34', '#2b2270',
-    0.36, 2.88, 0.06, 0.42, 0.4, 0.36,
+    '#080506', '#e2d2d2', '#ffffff', '#8a5a58',
+    0.36, 2.88, 0.06, 0.44, 0.4, 0.38,
     2.4, 1.5, 0.1, 0, 0, 1, 9.2, -1.5, 0.08,
   ),
 }

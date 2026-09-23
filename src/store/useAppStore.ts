@@ -53,6 +53,8 @@ type AppState = {
   progress: number
   /** first paint of the WebGL scene is done */
   sceneReady: boolean
+  /** first painted frame of the foreground canvas (the gem) is done */
+  frontReady: boolean
   /** intro overlay has been dismissed */
   loaded: boolean
 
@@ -84,14 +86,10 @@ type AppState = {
   worldMode: WorldMode
   /** section id that requested the current world mode (debug/QA) */
   worldModeSource: string
-  /**
-   * How far the viewport has travelled inside each pinned chapter, 0 → 1.
-   * Non-reactive: the WebGL loops read it through `useAppStore.getState()`.
-   */
-  chapters: Record<string, number>
 
   setProgress: (n: number) => void
   setSceneReady: (v: boolean) => void
+  setFrontReady: (v: boolean) => void
   setLoaded: (v: boolean) => void
   decideAudio: (v: Exclude<AudioDecision, 'pending'>) => void
   toggleAudio: () => void
@@ -106,13 +104,12 @@ type AppState = {
   setScroll: (metrics: ScrollMetrics) => void
   setEnv: (env: EnvState) => void
   setWorldMode: (mode: WorldMode, source?: string) => void
-  /** progress inside a pinned chapter (0 → 1) — read non-reactively */
-  setChapter: (id: string, value: number) => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
   progress: 0,
   sceneReady: false,
+  frontReady: false,
   loaded: false,
 
   audioDecision: 'pending',
@@ -133,10 +130,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   env: DEFAULT_ENV,
   worldMode: 'space',
   worldModeSource: 'app',
-  chapters: {},
 
   setProgress: (n) => set({ progress: Math.min(1, Math.max(0, n)) }),
   setSceneReady: (v) => set({ sceneReady: v }),
+  setFrontReady: (v) => set({ frontReady: v }),
   setLoaded: (v) => set({ loaded: v }),
 
   decideAudio: (v) => set({ audioDecision: v, audioEnabled: v === 'on' }),
@@ -191,12 +188,6 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (get().worldMode === mode && get().worldModeSource === source) return
     set({ worldMode: mode, worldModeSource: source })
   },
-
-  setChapter: (id, value) => {
-    const prev = get().chapters[id] ?? -1
-    if (Math.abs(prev - value) < 0.002) return
-    set((s) => ({ chapters: { ...s.chapters, [id]: value } }))
-  },
 }))
 
 /** sensible default world per section — sections may override it themselves */
@@ -208,6 +199,24 @@ export const WORLD_BY_SECTION: Record<string, WorldMode> = {
   studio: 'grid',
   contact: 'grid',
   footer: 'outro',
+}
+
+/**
+ * The colour each world washes over the *DOM* — the same story the WebGL
+ * palettes tell, published to CSS as `--tint-r/g/b` (App.tsx blends the two
+ * worlds the viewport sits between, every frame, so the page's ambient colour
+ * travels with the camera instead of cutting at a section boundary).
+ *
+ * Kept in plain RGB: blending two hues through a colour wheel can swing the
+ * page through green on its way from violet to paper, whereas straight RGB
+ * always takes the short, quiet path.
+ */
+export const WORLD_TINT: Record<WorldMode, [number, number, number]> = {
+  space: [176, 176, 176],
+  hall: [138, 143, 154],
+  blueprint: [86, 88, 138],
+  grid: [126, 132, 132],
+  outro: [168, 62, 52],
 }
 
 /** read the current view rotation without subscribing (used inside rAF loops) */

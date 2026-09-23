@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties, type MouseEvent as ReactMouseEve
 import { site } from '../content/site'
 import { revealOnView } from '../lib/animate'
 import { scrollToSection } from '../lib/scroll'
+import WaveText from '../components/WaveText'
 import './Footer.css'
 
 export default function Footer() {
@@ -46,7 +47,7 @@ export default function Footer() {
                         onClick={go(link.href)}
                         {...(link.href.startsWith('#') ? {} : { target: '_blank', rel: 'noreferrer' })}
                       >
-                        {link.label}
+                        <WaveText text={link.label} />
                       </a>
                     </li>
                   ))}
@@ -66,7 +67,7 @@ export default function Footer() {
             {site.footer.legal.map((item) => (
               <li key={item.label}>
                 <a className="u-mono footer__link" href={item.href} onClick={go(item.href)}>
-                  {item.label}
+                  <WaveText text={item.label} />
                 </a>
               </li>
             ))}

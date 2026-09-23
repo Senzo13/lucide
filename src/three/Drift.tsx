@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { pointer } from './pointer'
+import { createRoom, sampleRoom } from './mood'
 
 const vertexShader = /* glsl */ `
   attribute vec3  aOrigin;
@@ -13,6 +14,7 @@ const vertexShader = /* glsl */ `
 
   uniform float uTime;
   uniform float uCameraZ;
+  uniform vec3  uTint;
 
   varying vec3  vColor;
   varying float vFade;
@@ -39,8 +41,11 @@ const vertexShader = /* glsl */ `
     float near = smoothstep(-2.5, -1.0, mv.z);
     float far = smoothstep(-26.0, -8.0, mv.z);
     vFade = near * (1.0 - far) * 0.9 + 0.1;
-    vColor = aColor;
-    vColor += vec3(0.12, 0.05, 0.2) * sin(uTime * 0.4 + aSeed * 6.2831);
+    /* the marks carry their own value, but the *colour* they are lit by is the
+       room's — so they turn with the wall instead of swimming against it */
+    vColor = mix(aColor, uTint * (0.55 + aSeed * 0.6), 0.62);
+    // neutral breathing only: the marks belong to a black-and-white room
+    vColor += vec3(0.1) * sin(uTime * 0.4 + aSeed * 6.2831);
   }
 `
 
@@ -60,6 +65,7 @@ const TRIANGLES = 22
 export default function Drift() {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   const groupRef = useRef<THREE.Group>(null)
+  const room = useMemo(() => createRoom(), [])
 
   const geometry = useMemo(() => {
     const corners = [0, 1, 2].map((i) => {
@@ -81,13 +87,16 @@ export default function Drift() {
     const rot: number[] = []
     const speed: number[] = []
 
-    const orange = new THREE.Color('#ff6a1a')
-    const violet = new THREE.Color('#a855f7')
-    const cyan = new THREE.Color('#67e8f9')
+    /* The marks are part of the black-and-white room: whites, greys, and the
+       occasional red one — the only colour the reference allows itself. */
+    const pale = new THREE.Color('#f4f4f4')
+    const mid = new THREE.Color('#a4a4a4')
+    const deep = new THREE.Color('#4e4e4e')
+    const red = new THREE.Color('#ff3f24')
 
     for (let i = 0; i < TRIANGLES; i += 1) {
       const r = Math.random()
-      const tint = r < 0.62 ? orange : r < 0.88 ? violet : cyan
+      const tint = r < 0.46 ? pale : r < 0.8 ? mid : r < 0.93 ? deep : red
       const ox = (Math.random() - 0.5) * 16
       const oy = (Math.random() - 0.5) * 9
       const oz = (Math.random() - 0.5) * 26
@@ -121,11 +130,20 @@ export default function Drift() {
     return geo
   }, [])
 
-  const uniforms = useMemo(() => ({ uTime: { value: 0 }, uCameraZ: { value: 0 } }), [])
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uCameraZ: { value: 0 },
+      uTint: { value: new THREE.Color('#d8d8d8') },
+    }),
+    [],
+  )
 
   useFrame((state) => {
     uniforms.uTime.value = state.clock.elapsedTime
     uniforms.uCameraZ.value = state.camera.position.z
+    sampleRoom(state.clock.elapsedTime, room)
+    uniforms.uTint.value.copy(room.line)
     const group = groupRef.current
     if (!group) return
     group.rotation.y = pointer.x * 0.06

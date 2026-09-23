@@ -8,6 +8,7 @@ const HARD_STOP = 3000
 
 export default function Loader() {
   const sceneReady = useAppStore((s) => s.sceneReady)
+  const frontReady = useAppStore((s) => s.frontReady)
   const setLoaded = useAppStore((s) => s.setLoaded)
   const setProgress = useAppStore((s) => s.setProgress)
   const [pct, setPct] = useState(0)
@@ -49,7 +50,11 @@ export default function Loader() {
       const dt = Math.min(0.05, (now - clock.t) / 1000)
       clock.t = now
       const elapsed = now / 1000
-      const target = useAppStore.getState().sceneReady ? 100 : Math.min(92, 92 * (1 - Math.exp(-elapsed / 1.35)))
+      /* The curtain only lifts once the *foreground* canvas has painted too:
+         the gem and its texture are the first thing the visitor looks at, and
+         revealing the page without them is what made them arrive late. */
+      const { sceneReady: back, frontReady: fore } = useAppStore.getState()
+      const target = back && fore ? 100 : Math.min(94, 94 * (1 - Math.exp(-elapsed / 1.35)))
       valueRef.current += (target - valueRef.current) * (1 - Math.exp(-dt * 6.2))
       if (valueRef.current > 99.4 && target === 100) {
         finish()
@@ -65,7 +70,7 @@ export default function Loader() {
       cancelAnimationFrame(raf)
       window.clearTimeout(hardStop)
     }
-  }, [setLoaded, setProgress, sceneReady])
+  }, [setLoaded, setProgress, sceneReady, frontReady])
 
   if (gone) return null
 

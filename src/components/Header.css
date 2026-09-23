@@ -25,7 +25,7 @@
 }
 
 .header[data-scrolled='true'] {
-  background: linear-gradient(180deg, rgba(5, 3, 15, 0.86) 0%, rgba(5, 3, 15, 0.42) 68%, rgba(5, 3, 15, 0) 100%);
+  background: linear-gradient(180deg, rgba(6, 6, 7, 0.86) 0%, rgba(6, 6, 7, 0.42) 68%, rgba(6, 6, 7, 0) 100%);
   backdrop-filter: blur(10px);
 }
 
@@ -49,8 +49,8 @@ html[data-world='blueprint'] .header__nav-ghost {
 }
 
 html[data-world='blueprint'] .u-pill:hover {
-  background: #0b0920;
-  border-color: #0b0920;
+  background: #101011;
+  border-color: #101011;
   color: #eceae3;
 }
 

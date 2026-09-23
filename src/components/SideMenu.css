@@ -19,7 +19,7 @@
   justify-content: space-between;
   gap: clamp(24px, 4vh, 56px);
   padding: calc(var(--pad-x) + 46px) var(--pad-x) calc(var(--bar-h) + 30px);
-  background: linear-gradient(180deg, rgba(6, 4, 20, 0.96) 0%, rgba(10, 7, 34, 0.94) 60%, rgba(5, 3, 15, 0.98) 100%);
+  background: linear-gradient(180deg, rgba(8, 8, 9, 0.96) 0%, rgba(12, 12, 13, 0.94) 60%, rgba(6, 6, 7, 0.98) 100%);
   backdrop-filter: blur(18px);
   border-bottom: 1px solid var(--line);
   transform: translateY(-100%);

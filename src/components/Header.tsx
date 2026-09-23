@@ -4,6 +4,7 @@ import { site } from '../content/site'
 import { audio, blip } from '../lib/audio'
 import { scrollToSection } from '../lib/scroll'
 import { useAppStore } from '../store/useAppStore'
+import WaveText from './WaveText'
 import './Header.css'
 
 export default function Header() {
@@ -59,9 +60,11 @@ export default function Header() {
         {site.nav.map((item) => (
           <a key={item.href} className="header__nav-item" href={item.href} onClick={go(item.href)}>
             <span className="header__nav-inner">
-              <span>{item.label}</span>
+              <span>
+                <WaveText text={item.label} />
+              </span>
               <span className="header__nav-ghost" aria-hidden="true">
-                {item.label}
+                <WaveText text={item.label} />
               </span>
             </span>
           </a>
@@ -71,7 +74,9 @@ export default function Header() {
       <div className="header__right">
         <a className="u-pill header__cta" href={site.cta.href} onClick={go(site.cta.href)}>
           <span className="u-pill__inner">
-            <span>{site.cta.label}</span>
+            <span>
+              <WaveText text={site.cta.label} />
+            </span>
             <span className="u-pill__hover" aria-hidden="true">
               {site.cta.label}
             </span>

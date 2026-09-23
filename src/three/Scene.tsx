@@ -9,14 +9,28 @@ import {
 import { Canvas } from '@react-three/fiber'
 import Backdrop from './Backdrop'
 import Drift from './Drift'
-import Corridor from './Corridor'
 import Crystal from './Crystal'
 import WordLayer from './WordLayer'
-import Panels from './Panels'
 import Effects from './Effects'
 import { useAppStore, DEFAULT_ROTATION } from '../store/useAppStore'
 import { useGlobalPointer } from './pointer'
 import './Scene.css'
+
+/**
+ * The WebGL layer builds its textures, geometry and materials once per mount
+ * and drives them from frame loops, so a hot update can only ever half-apply:
+ * React swaps the component while the canvas keeps drawing the *previous*
+ * meshes. In the browser that is indistinguishable from "the change was never
+ * made". Anything touched under `src/three/` therefore reloads the page.
+ */
+if (import.meta.hot) {
+  import.meta.hot.on('vite:beforeUpdate', (payload) => {
+    const touched = payload.updates.some((update) =>
+      update.acceptedPath.replace(/\\/g, '/').includes('/three/'),
+    )
+    if (touched) window.location.reload()
+  })
+}
 
 /** WebGL must never take the page down: fall back to the CSS gradient. */
 class GLCatch extends Component<{ children: ReactNode }, { failed: boolean }> {
@@ -31,6 +45,7 @@ class GLCatch extends Component<{ children: ReactNode }, { failed: boolean }> {
 
 export default function Scene() {
   const activeSection = useAppStore((s) => s.activeSection)
+  const frontReady = useAppStore((s) => s.frontReady)
   const setSceneReady = useAppStore((s) => s.setSceneReady)
   const setViewRotation = useAppStore((s) => s.setViewRotation)
   const readyRef = useRef(false)
@@ -116,17 +131,16 @@ export default function Scene() {
         >
           <Suspense fallback={null}>
             <Backdrop />
-            <WordLayer layer="far" />
-            <Corridor />
-            <Panels />
+            <WordLayer />
             <Drift />
           </Suspense>
         </Canvas>
       </div>
 
-      {/* The prism's own canvas: the glass refracts a faint copy of the giant
-          wordmark sitting in the same canvas behind it. */}
-      <div className="scene-layer scene-layer--front">
+      {/* The gem's own canvas. It sits *above* the DOM, which is the whole
+          point of the key visual: the stone has to cut into the wordmark, not
+          hang behind it. */}
+      <div className="scene-layer scene-layer--front" data-ready={frontReady}>
         <Canvas
           dpr={[1, 2]}
           gl={{ antialias: true, powerPreference: 'high-performance', alpha: true }}
@@ -135,7 +149,6 @@ export default function Scene() {
         >
           <Suspense fallback={null}>
             <ambientLight intensity={0.6} />
-            <WordLayer layer="near" distance={26} />
             <Crystal />
             <Effects />
           </Suspense>

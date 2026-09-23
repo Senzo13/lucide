@@ -5,22 +5,32 @@
 
 :root {
   /* --- surface ---------------------------------------------------------- */
-  --bg-0: #05030f;
-  --bg-1: #0a0722;
-  --bg-2: #150a33;
-  --bg-3: #1d0f45;
+  /* The reference key visual is black and white, so the page's surfaces are
+     neutral: no violet undertone anywhere in the furniture. */
+  --bg-0: #060607;
+  --bg-1: #0b0b0c;
+  --bg-2: #141415;
+  --bg-3: #1c1c1e;
   --black: #000000;
 
   /* --- accents ---------------------------------------------------------- */
-  --violet: #7c3aed;
-  --violet-bright: #a855f7;
-  --violet-deep: #4c1d95;
-  --magenta: #d946ef;
-  --fuchsia: #f0abfc;
-  --grid-blue: #3a49c9;
-  --grid-blue-soft: rgba(58, 73, 201, 0.55);
-  --cyan: #67e8f9;
-  --orange: #ff6a1a;
+  /* A black-and-white page is allowed exactly one colour. That colour is the
+     red the room floods with on its slow mood (see `src/three/mood.ts`), and
+     every accent on the page is drawn from it. The historic token names are
+     kept as aliases so existing rules keep working unchanged. */
+  --accent: #ff3b23;
+  --accent-dim: #b92914;
+  --accent-pale: #ffb9ab;
+
+  --violet: var(--accent);
+  --violet-bright: var(--accent);
+  --violet-deep: var(--accent-dim);
+  --magenta: var(--accent-pale);
+  --fuchsia: var(--accent-pale);
+  --grid-blue: #c9c9c9;
+  --grid-blue-soft: rgba(201, 201, 201, 0.55);
+  --cyan: #ececec;
+  --orange: var(--accent);
 
   /* --- ink -------------------------------------------------------------- */
   --ink: #ffffff;
@@ -32,8 +42,8 @@
   --line: rgba(255, 255, 255, 0.16);
   --line-strong: rgba(255, 255, 255, 0.34);
   --line-dark: rgba(0, 0, 0, 0.35);
-  --glass: rgba(10, 7, 34, 0.55);
-  --glass-strong: rgba(6, 4, 20, 0.82);
+  --glass: rgba(12, 12, 13, 0.55);
+  --glass-strong: rgba(8, 8, 9, 0.82);
 
   /* --- type ------------------------------------------------------------- */
   /* Display face for section headings, the brand lockup and numerals. */
@@ -87,6 +97,19 @@
 
   /* pin progress of the hero key visual (0 → 1), written by App.tsx each frame */
   --hero-p: 0;
+  /* ambient tint of the world the camera is in, written by App.tsx each frame
+     as raw RGB channels so it can be used with any alpha */
+  --tint-r: 176;
+  --tint-g: 176;
+  --tint-b: 176;
+  /* the light of the room, written ~10×/s by the WebGL backdrop (see
+     `src/three/mood.ts`): the wall relights itself every couple of seconds and
+     the DOM scrims take the same colour, so the page turns as one frame.
+     `--room-a` is 0 on the light "blueprint" sheet, where colour is a stain. */
+  --room-r: 142;
+  --room-g: 166;
+  --room-b: 255;
+  --room-a: 1;
 
   color-scheme: dark;
 }
