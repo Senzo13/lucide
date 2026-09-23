@@ -1,0 +1,52 @@
+/* --------------------------------------------------------------------------
+   The wall as a block of a page: a box that fills its host, a fade at the top
+   so the wall has no edge, and the grain of the glass over it.
+   Everything is namespaced under `.screen-wall` — drop the module in, import
+   `screen-wall.css`, and nothing else in your project is touched.
+   -------------------------------------------------------------------------- */
+
+.screen-wall {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--wall-base, #060607);
+  /* the wall is a surface, not a control: it never eats a click meant for the
+     page above it */
+  pointer-events: none;
+}
+
+.screen-wall canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* the fade: the wall dissolves into the page instead of ending on a line */
+.screen-wall__fade {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--wall-fade, 26%);
+  background: linear-gradient(
+    to bottom,
+    var(--wall-fade-color, #060607) 0%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 70%, transparent) 45%,
+    transparent 100%
+  );
+}
+
+/* the glass the whole frame is seen through */
+.screen-wall__grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.045) 0px,
+    rgba(255, 255, 255, 0.045) 1px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 0, 0, 0) 3px
+  );
+}

@@ -1,4 +1,5 @@
 import { useAppStore } from '../store/useAppStore'
+import { envelopeCut } from '../wall/envelope'
 
 /**
  * The wall's broadcast moment, sampled by clock.
@@ -15,11 +16,6 @@ let duration = 1
 
 const now = () => performance.now() / 1000
 
-const smoothstep = (t: number, a: number, b: number) => {
-  const x = Math.min(1, Math.max(0, (t - a) / (b - a)))
-  return x * x * (3 - 2 * x)
-}
-
 /** pick up a moment the DOM has just published; returns its 0 → 1 phase */
 function phase(at: number) {
   const moment = useAppStore.getState().wallMoment
@@ -35,8 +31,7 @@ function phase(at: number) {
 /** how loudly the wall is currently speaking, 0 → 1 */
 export function wallCut(at = now()) {
   const t = phase(at)
-  if (t <= 0 || t >= 1) return 0
-  return Math.min(1, t / 0.09) * (1 - smoothstep(t, 0.74, 1))
+  return envelopeCut(t)
 }
 
 /** where in the moment we are, 0 → 1 (1 when nothing is playing) */

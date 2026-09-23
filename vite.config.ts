@@ -10,5 +10,12 @@ export default defineConfig({
   build: {
     target: 'es2022',
     chunkSizeWarningLimit: 2400,
+    /* the site, and the standalone demo of the exportable wall */
+    rollupOptions: {
+      input: {
+        main: 'index.html',
+        wall: 'wall.html',
+      },
+    },
   },
 })

@@ -1,0 +1,124 @@
+/* the demo host: only the page around the wall, never the wall itself */
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #060607;
+  color: #fff;
+  font-family: 'Inter Variable', 'Inter', system-ui, sans-serif;
+}
+
+.demo {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.demo__top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 26px clamp(18px, 3vw, 46px);
+}
+
+.demo__mark {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.demo__tag,
+.demo__legal {
+  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.demo__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+  max-width: 900px;
+  padding: clamp(40px, 12vh, 140px) clamp(18px, 3vw, 46px);
+}
+
+.demo__title {
+  margin: 0;
+  font-size: clamp(28px, 4.4vw, 64px);
+  font-weight: 800;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+}
+
+.demo__lead {
+  margin: 0;
+  max-width: 62ch;
+  font-size: clamp(14px, 1.1vw, 17px);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.demo__lead--dim {
+  color: rgba(255, 255, 255, 0.44);
+}
+
+/* the host box: the wall is absolutely placed inside it, so the footer only
+   has to have a height and a position */
+.demo__footer {
+  position: relative;
+  height: clamp(360px, 52vh, 560px);
+  isolation: isolate;
+}
+
+.demo__footer-inner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: clamp(24px, 4vh, 46px) clamp(18px, 3vw, 46px) clamp(20px, 3vh, 34px);
+  pointer-events: none;
+}
+
+.demo__footer-inner a {
+  pointer-events: auto;
+}
+
+.demo__wordmark {
+  font-size: clamp(34px, 6vw, 96px);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-shadow: 0 0 40px rgba(0, 0, 0, 0.65);
+}
+
+.demo__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(14px, 2vw, 34px);
+}
+
+.demo__links a {
+  font-family: 'JetBrains Mono Variable', ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.demo__links a:hover {
+  color: #fff;
+}

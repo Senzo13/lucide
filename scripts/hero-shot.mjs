@@ -32,7 +32,9 @@ const browser = await chromium.launch({
   channel: 'chrome',
   args: ['--use-gl=angle', '--use-angle=d3d11', '--ignore-gpu-blocklist', '--hide-scrollbars', '--mute-audio'],
 })
-const page = await browser.newPage({ viewport: { width: 1512, height: 850 }, deviceScaleFactor: 1 })
+/* SHOT_VIEWPORT=w,h for a different frame (a tall one shows a whole page) */
+const [vw, vh] = (process.env.SHOT_VIEWPORT ?? '1512,850').split(',').map(Number)
+const page = await browser.newPage({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1 })
 /* SHOT_REDUCE=1 walks the reduced-motion path, where the wall never speaks:
    what is left on screen is the room itself, with no feed on it */
 if (process.env.SHOT_REDUCE) await page.emulateMedia({ reducedMotion: 'reduce' })
