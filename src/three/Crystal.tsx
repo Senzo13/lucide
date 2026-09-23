@@ -5,7 +5,7 @@ import * as THREE from 'three'
 import { useAppStore } from '../store/useAppStore'
 import { blendPalette, createPalette } from './palette'
 import { createRoom, sampleRoom } from './mood'
-import { pointer } from './pointer'
+import { ease, pointer } from './pointer'
 import { wallCut } from './wall'
 
 /**
@@ -27,6 +27,8 @@ const INK_WHITE = new THREE.Color('#ffffff')
 const PRISM_WARM = new THREE.Color('#ff4fd8')
 const PRISM_COOL = new THREE.Color('#67e8f9')
 const HOT_WHITE = new THREE.Color('#ffffff')
+
+const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 
 /** Additive fresnel shell: the neon edge of the stone. */
 const RIM_VERT = /* glsl */ `
@@ -293,20 +295,30 @@ const LIQUID_FRAG = /* glsl */ `
 
 /** how far the surface of the stone travels when it ripples, in world units */
 const RIPPLE = 0.12
+/** how far the cursor pulls the surface towards itself — the liquid in the glass */
+const PULL = 0.13
 
 /**
  * The wave the stone's surface runs on: three slow swells travelling in
  * different directions, sampled on the *rest* shape of the gem so the motion
  * never accumulates. It is a wave, not a noise field — the eye should read
  * liquid, not static.
+ *
+ * On top of that runs the visitor: the point of the surface that faces the
+ * cursor is pulled towards it, and the pull spreads along the facets. That is
+ * what makes the stone answer a mouse the way a drop of water does — the whole
+ * block leans, one face at a time, instead of a highlight sliding over it.
  */
-function ripple(x: number, y: number, z: number, t: number) {
-  return (
+function ripple(x: number, y: number, z: number, t: number, hx: number, hy: number, hover: number) {
+  const wave =
     (Math.sin(y * 3.1 + t * 1.05) * 0.5 +
       Math.sin(x * 4.2 - t * 0.75) * 0.3 +
       Math.sin(z * 3.6 + t * 0.62) * 0.24) *
     RIPPLE
-  )
+  if (hover < 0.002) return wave
+  const dx = x * 0.66 - hx
+  const dy = y * 0.5 - hy
+  return wave + hover * PULL * Math.exp(-(dx * dx + dy * dy) * 4.2)
 }
 
 /** subdivisions per octahedron face: enough vertices for a wave, no more */
@@ -452,6 +464,8 @@ export default function Crystal() {
   const publishRef = useRef(0)
   const readyRef = useRef(false)
   const presence = useRef(1)
+  /** how hard the cursor is pulling the stone right now (0 → 1, eased) */
+  const hoverRef = useRef(0)
   /** scratch orientation for the two camera-facing planes (never cloned) */
   const billboard = useRef(new THREE.Quaternion())
   const palette = useMemo(() => createPalette(), [])
@@ -650,14 +664,26 @@ export default function Crystal() {
     const visible = presence.current
     group.visible = visible > 0.01
 
+    /* how hard the cursor is pulling the stone: it fades in as the visitor
+       moves and fades out when they leave, never in a single frame */
+    hoverRef.current = ease(hoverRef.current, pointer.inside ? 1 : 0, 2.6, delta)
+    const hover = hoverRef.current
+
+    /* The stone follows the cursor. Passing *over* it is enough — no press, no
+       drag, no holding anything: the closer the pointer is to the stone, the
+       harder it turns, and it eases back the moment the cursor leaves. The
+       drag surface still gives the full turntable, for when the visitor wants
+       to take the object in their hand. */
+    const reach = clamp01(1 - Math.hypot(pointer.x, pointer.y) / 1.15)
+    const near = reach * reach * (3 - 2 * reach)
     easing.dampE(
       group.rotation,
       [
-        rx * 0.45 + pointer.y * 0.1 + Math.sin(idle * 0.26) * 0.045,
-        ry * 0.75 + pointer.x * 0.24 + idle * 0.045,
-        rz * 0.6 + Math.sin(idle * 0.19) * 0.04,
+        rx * 0.45 + pointer.y * (0.1 + near * 1.15) + Math.sin(idle * 0.26) * 0.045,
+        ry * 0.75 + pointer.x * (0.24 + near * 1.45) + idle * 0.045,
+        rz * 0.6 + Math.sin(idle * 0.19) * 0.04 + pointer.x * near * 0.22,
       ],
-      0.32,
+      0.42,
       delta,
     )
     group.position.set(
@@ -669,9 +695,11 @@ export default function Crystal() {
     /* The stone is small at rest and grows through the pin, then settles back
        as the camera dives away from it — it is the subject of the key visual,
        not a permanent ornament. */
-    const fit = Math.min(1.35, Math.max(0.42, viewport.height / 5.6))
-    const grow = 0.86 + hero * 0.34 - travel * 0.34
-    group.scale.setScalar(fit * grow * (0.55 + visible * 0.45))
+    const fit = Math.min(1.5, Math.max(0.46, viewport.height / 4.9))
+    const grow = 0.9 + hero * 0.32 - travel * 0.34
+    /* the glass leans towards the cursor: a touch of swell, nothing more —
+       the pull lives in the surface, not in the size of the stone */
+    group.scale.setScalar(fit * grow * (0.55 + visible * 0.45) * (1 + hover * 0.012))
 
     /* the heart of the stone turns against the glass and picks up more of the
        room's colour the further the camera has dived */
@@ -686,11 +714,13 @@ export default function Crystal() {
        wave is always measured from the rest shape, never accumulated. */
     const attr = gem.attribute
     const positions = attr.array as Float32Array
+    const hx = pointer.x * 0.78
+    const hy = pointer.y * 0.62
     for (let i = 0; i < positions.length; i += 3) {
       const bx = gem.base[i]
       const by = gem.base[i + 1]
       const bz = gem.base[i + 2]
-      const wave = ripple(bx, by, bz, idle)
+      const wave = ripple(bx, by, bz, idle, hx, hy, hover)
       positions[i] = bx + gem.face[i] * wave
       positions[i + 1] = by + gem.face[i + 1] * wave
       positions[i + 2] = bz + gem.face[i + 2] * wave
@@ -698,7 +728,8 @@ export default function Crystal() {
     attr.needsUpdate = true
     body.computeVertexNormals()
     coreUniforms.uTime.value = idle
-    coreUniforms.uIntensity.value = (0.5 + hero * 0.2 + travel * 0.18 + Math.sin(idle * 0.9) * 0.05) * visible
+    coreUniforms.uIntensity.value =
+      (0.5 + hero * 0.2 + travel * 0.18 + Math.sin(idle * 0.9) * 0.05) * visible * (1 + hover * 0.35)
 
     /* The stone is lit by the room, and the room changes colour every couple of
        seconds — so the glass, its rim, its heart and the stroke behind it all
@@ -713,7 +744,7 @@ export default function Crystal() {
        the gem takes the room's own line colour, harder, for as long as the
        picture holds — then goes back to its resting sheen. */
     const screen = wallCut()
-    rimUniforms.uIntensity.value = (0.95 + Math.sin(idle * 1.05) * 0.12 + screen * 0.85) * visible
+    rimUniforms.uIntensity.value = (0.95 + Math.sin(idle * 1.05) * 0.12 + screen * 0.85 + hover * 0.45) * visible
     rimUniforms.uEdge.value.lerp(room.line, screen * 0.7)
     rimUniforms.uEdgeCool.value.lerp(room.line, screen * 0.5)
 
@@ -726,7 +757,17 @@ export default function Crystal() {
       (0.03 + halo * 0.34 + Math.sin(idle * 1.3) * 0.02 * halo + screen * 0.22) * visible
     /* the light of the screens sits *on* the glass, not inside it */
     glassMaterial.attenuationColor.copy(room.line).lerp(INK_WHITE, 0.5 - screen * 0.22)
-    glassMaterial.emissiveIntensity = 0.35 + screen * 0.5
+    /* the stone takes the same light the wall does: the cursor wakes it the
+       way it wakes the screens it is over */
+    glassMaterial.emissiveIntensity = 0.35 + screen * 0.5 + hover * 0.3
+    /* Liquid glass: under the cursor the block thickens, its dispersion widens
+       and its edge tightens — a drop of water answers like that, a pane of
+       glass does not. */
+    glassMaterial.thickness = 2.2 + hover * 1.2
+    glassMaterial.dispersion = 9.5 + hover * 6
+    glassMaterial.iridescence = 0.18 + hover * 0.26
+    glassMaterial.clearcoat = 0.4 + hover * 0.4
+    glassMaterial.envMapIntensity = 1.5 + hover * 0.6
 
     /* the heart is white whatever the room is doing: the reference's stone
        burns, and the colour it burns *in* is the room's */
@@ -740,7 +781,7 @@ export default function Crystal() {
     massUniforms.uIntensity.value = (0.7 + hero * 0.35) * (0.35 + visible * 0.65)
     liquidUniforms.uTime.value = idle
     liquidUniforms.uColor.value.copy(room.line)
-    liquidUniforms.uIntensity.value = (0.72 + hero * 0.2) * (0.3 + visible * 0.7)
+    liquidUniforms.uIntensity.value = (0.72 + hero * 0.2) * (0.3 + visible * 0.7) * (1 + hover * 0.55)
     const face = billboard.current.copy(group.quaternion).invert().multiply(state.camera.quaternion)
     if (massRef.current) massRef.current.quaternion.copy(face)
     if (glowRef.current) glowRef.current.quaternion.copy(face)

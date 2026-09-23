@@ -60,7 +60,7 @@
   /* fluid ramp */
   --fs-mono-xs: clamp(9px, 0.62vw, 11px);
   --fs-mono: clamp(10px, 0.72vw, 12px);
-  --fs-nav: clamp(14px, 1.05vw, 18px);
+  --fs-nav: clamp(10px, 0.66vw, 11.5px);
   --fs-body: clamp(14px, 1.02vw, 17px);
   --fs-lead: clamp(18px, 1.9vw, 34px);
   --fs-h2: clamp(30px, 4.6vw, 84px);

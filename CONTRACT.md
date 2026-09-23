@@ -59,6 +59,12 @@ Every component/section imports its own CSS file next to it
 100 Loader                        --z-loader
 ```
 
+The CRT overlay (`src/components/Scanlines.tsx`) is the *glass*: fine scanlines
+and a light grain, and nothing that travels across the frame. The coloured band
+that used to sweep down the page every fourteen seconds is gone, in the DOM and
+in the backdrop shader alike — a sweep that moves on its own reads as a fault of
+the page rather than as a property of the screen.
+
 The channel cut is the only layer that is allowed to cover the chrome and the
 side menu: it is what the page looks like *between* two chapters. It never
 covers the cursor — that one belongs to the visitor, not to the page.
@@ -227,6 +233,11 @@ the WebGL crystal (no background, `mix-blend-mode: normal`, transparent).
 coordinate dots row bound to `coords`, the circular interactive gizmo
 (drag → `setViewRotation`), and `RÉINITIALISER LA VUE` → `resetView()`.
 
+`Cursor` is a **square**: a 6px pixel and a thin square frame, never a round
+ring — the page is a grid of screens and an instrument panel, and a circle
+floating over it reads as an applique. The frame opens up on hover and on the
+3D drag surface, and the label rides inside it.
+
 `ChannelWipe` renders the black mosaic that plays between two chapters (see
 5.7). It is driven entirely by `useAppStore().channel`: it rebuilds its cells on
 every `nonce`, runs one GSAP timeline (~0.9 s, ~0.5 s for the short `cut`
@@ -257,10 +268,55 @@ while the frame is black. QA: `node scripts/cut-qa.mjs`.
 ## 5.8 The wall writes — the hero's own broadcast moment
 
 The key visual is a room of screens, and every ten to seventeen seconds the
-wall comes on by itself and writes a word across the cells it is already made
+wall comes on by itself and plays something across the cells it is already made
 of. Nothing is laid over the picture: the cells of the existing grid go black,
-some catch the room's own light, some carry the studio's triangle, and a run of
-them spells the word.
+some catch the room's own light, and what they show is composed on the CPU.
+
+One moment is a **programme** of three beats, picked from the moment's seed:
+
+| channel | what the wall shows |
+| --- | --- |
+| `word` | a run of cells combining into one letter each, written then switched off cell by cell |
+| `mark` | a drawing made of lit squares, appearing then going out one cell at a time |
+| `wave` | a sea: a swell travelling across the band, a breaking crest, foam |
+| `page` | a picture scrolling screen by screen — a photo if one is present, a drawn comic sheet otherwise |
+| `runner` | a little figure running across the wall, jumping the gaps, with something on his heels |
+
+The **written** channels are painted at full canvas resolution and snap from
+take to take (a display that writes holds its frame). The **broadcast** channels
+are painted on a grid of two samples per screen and blown up with smoothing
+off, so the picture is carried by the cells themselves — that is what makes an
+image read as a wall of monitors rather than as a texture laid over one.
+
+Photos: drop files into `src/assets/feed/` (png/jpg/webp/avif). They are picked
+up automatically and played back through the same cells, panning down the
+image in whole screens. Nothing ships with the site, so the wall falls back to
+the drawn sheet.
+
+Everything the wall *writes* (a word, a drawing, the runner) is centred on the
+seam of the room — column 0 — because that seam is what the camera faces. A
+word written anywhere else is written off screen.
+
+### 5.8b The room answers the cursor
+
+The wall is not a picture: it has give. Where the pointer is, the backdrop
+displaces the *geometry* of the wall — arc length, height, the black joint
+between two screens — and slides the picture inside its own cell by a smaller
+amount, so the pixels really move rather than being tinted. The patch is a soft
+*square* (the room is a grid; a round blob reads as an applique), it eases in
+and out, and it carries a little light so the screens under the cursor wake up.
+The gem takes the same treatment: its surface is pulled towards the cursor
+(`PULL` in `Crystal.tsx`), it thickens, and its dispersion widens — the liquid
+glass answer to a hand passing over it. Hovering the stone is enough to turn
+it; the drag surface is only for the full turntable.
+
+Rules:
+
+- the strength is `uHover` in `Backdrop.tsx` and `hoverRef` in `Crystal.tsx`,
+  both eased — never a raw pointer value, or the room snaps;
+- it is deliberately *small*: the effect has to read as give, not as a fault;
+- `pointer.inside` (see `src/three/pointer.ts`) is what switches it off when the
+  cursor leaves the window.
 
 ```ts
 // src/components/HeroSignal.tsx — renders nothing, owns the clock
@@ -273,9 +329,12 @@ writeOnWall(word: string, duration?: number): void   // default 3.4 s
 export function wallCut(at?: number): number    // 0 → 1 how loud the wall is
 export function wallStep(at?: number): number   // which redraw of the pattern
 
-// src/three/atlas.ts — the glyphs, baked once into an 8×8 canvas
-export function createGlyphAtlas(): THREE.CanvasTexture
-export function glyphIndex(char: string | undefined): number
+// src/three/screens.ts — the feed, painted on the CPU into one canvas
+export const SCREEN_COLS: number
+export const SCREEN_ROWS: number
+export function updateScreens(word: string, seed: number, phase: number, duration?: number): void
+export const screenTexture: THREE.CanvasTexture | null
+export type Channel = 'word' | 'mark' | 'wave' | 'page'   // internal
 ```
 
 Rules:
@@ -293,9 +352,17 @@ Rules:
   first frame.
 - The screens are separated by a black joint (`screenGap` in the fragment
   shader): wide enough to read as a bezel, thin enough to keep the grid the
-  subject. The fine cell of the `space` world is `0.58` world units so the
-  screens read as screens.
-- QA: `?wall=LUCIDE` puts one word on the wall and holds it.
+  subject. The joint also cuts *through* a broadcast (`screenJoint`), so a lit
+  picture never fuses the wall into one flat panel.
+- The fine cell of the `space` world is `0.85` world units — big, deliberate
+  screens — and `tileW` / `tileH` are always a whole number of them, so the
+  mosaic panels land on the grid instead of slicing a screen in half.
+- The floor is **off** in the `space` world (`ground: 0` in
+  `src/three/palette.ts`): no lattice on the ground, no light pooling under the
+  camera, no cells below eye level. The key visual is the wall and only the
+  wall; the ground comes back in the worlds further down the document.
+- QA: `?wall=LUCIDE` puts one word on the wall and holds it,
+  `?feed=wave|page|word|mark` pins one channel (`?wall=LUCIDE&feed=page`).
 
 ## 6. Visual spec (from the screenshot — 1512×850 baseline)
 
@@ -319,7 +386,7 @@ Type
 | --- | --- | --- | --- |
 | wordmark | `--font-wordmark` — Inter Variable **700** | `--fs-wordmark` = `clamp(46px, min(19.2vw, 34.2vh), 420px)` | measured against the mockup: cap-height 25.8% of the viewport height, ink width 69% of its width, cap centred at 48% of the height, `width/cap 4.73`. No `scaleY`, no glow: flat crisp white |
 | H2 | display | `--fs-h2` | uppercase, one-line punch |
-| nav | `--font-sans` | `--fs-nav` (~17px) | regular weight, no uppercase |
+| nav | `--font-mono` | `--fs-nav` (~11px) | mechanical: uppercase, `letter-spacing .14em`, weight 500, sits 7px below the logo's line |
 | mono HUD | `--font-mono` | `--fs-mono` (11–12px) | uppercase, `letter-spacing .16em`, `line-height 1.9` |
 | body | `--font-sans` | `--fs-body` | `--ink-dim` for support copy |
 
@@ -341,7 +408,7 @@ Layout (desktop)
   underline link │ `POWERED BY NEVOLABS`
 
 Motion: page-load mask reveal, wordmark letters rising with blur, crystal
-idle rotation + mouse parallax, scanline sweep, glitch bursts on
+idle rotation + mouse parallax, glitch bursts on
 `glitchNonce`, magnetic cursor, hover states that slide text out and back
 (`.u-pill`), section content revealing on scroll, and the channel cut between
 chapters (5.7) — a black mosaic that spells the destination out of dead cells,

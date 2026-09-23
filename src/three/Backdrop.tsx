@@ -62,6 +62,13 @@ const fragmentShader = /* glsl */ `
   uniform float uTravel;
   uniform float uHero;
   uniform float uWallOff;
+  /* the visitor's cursor, in the frame's own coordinates (0 → 1, y up) */
+  uniform vec2  uPointer;
+  uniform float uHover;
+  /* how much of the room's lattice lands on the ground and the ceiling. The
+     key visual is a wall of screens and nothing else: under it there is no
+     floor grid at all, and the cells only come back deeper in the document. */
+  uniform float uGround;
 
   /* the wall's own broadcast moment: while uScreen is up, the cells of the
      *existing* grid behave as monitors and show what the CPU painted for them */
@@ -110,6 +117,21 @@ const fragmentShader = /* glsl */ `
     vec3 ro = uCameraPos;
     vec3 rd = rayDirection(vUv);
 
+    /* ---- the visitor's own distortion ----------------------------------
+       The wall answers the cursor. Not with a ring and not with a round glow:
+       the *geometry* of the room is displaced where the pointer is — a soft
+       square patch, because the room is a grid and a grid bends squarely —
+       and the picture on the screens is displaced with it, so the pixels
+       really move instead of being tinted. */
+    vec2 pdelta = (vUv - uPointer) * vec2(uAspect, 1.0);
+    vec2 psq = pdelta * pdelta;
+    float pnear = max(abs(pdelta.x), abs(pdelta.y));
+    float lensField = uHover * exp(-pnear * pnear * 18.0);
+    float lensRing = uHover * sin((psq.x + psq.y) * 42.0 - uTime * 2.8) * exp(-(psq.x + psq.y) * 11.0);
+    /* the patch is also a lamp: the cursor wakes the screens it is over, just
+       enough to read as attention and never enough to light the room */
+    float lensLamp = lensField * 0.5;
+
   float structure = 0.0;   // fine grid, accumulated over the surfaces
   float majorMask = 0.0;   // amber rules
   float tiles = 0.0;       // mosaic panel shading (0.5 = neutral)
@@ -119,6 +141,7 @@ const fragmentShader = /* glsl */ `
     float near = 0.0;        // how close the visible structure is
     float crossings = 0.0;   // registration crosses (blueprint sheet only)
     float screenGap = 0.0;   // the black joint between two screens
+    float screenJoint = 0.0; // ... as it lands on the wall itself
     float screenMask = 0.0;  // how much of this fragment is a lit monitor
     vec3  screenInk = vec3(0.0); // what that monitor is showing
 
@@ -127,16 +150,16 @@ const fragmentShader = /* glsl */ `
       float t = (uFloorY - ro.y) / rd.y;
       vec3 p = ro + rd * t;
       float fade = exp(-t * uFogK);
-      float fine = gridMask(p.xz, uCell);
-      float maj = gridMask(p.xz, uMajorCell);
+      float fine = gridMask(p.xz, uCell) * uGround;
+      float maj = gridMask(p.xz, uMajorCell) * uGround;
       structure += fine * 0.5 * fade;
       majorMask += maj * 0.85 * fade;
-      glow += exp(-length(p.xz - ro.xz) * 0.3) * fade * 0.85;
+      glow += exp(-length(p.xz - ro.xz) * 0.3) * fade * 0.85 * uGround;
       /* the floor is tiled with the same screens as the wall, so it takes the
          same black joint between them */
       vec2 fg = p.xz / uCell;
       float fgap = 0.5 - max(abs(fract(fg.x) - 0.5), abs(fract(fg.y) - 0.5));
-      screenGap = max(screenGap, (1.0 - smoothstep(0.012, 0.052, fgap)) * fade);
+      screenGap = max(screenGap, (1.0 - smoothstep(0.012, 0.052, fgap)) * fade * uGround);
       near = max(near, fade);
     }
 
@@ -145,7 +168,7 @@ const fragmentShader = /* glsl */ `
       float t = (CEIL_Y - ro.y) / rd.y;
       vec3 p = ro + rd * t;
       float fade = exp(-t * uFogK * 1.5);
-      structure += gridMask(p.xz, uCell) * 0.16 * fade;
+      structure += gridMask(p.xz, uCell) * 0.16 * fade * uGround;
       near = max(near, fade * 0.5);
     }
 
@@ -163,6 +186,13 @@ const fragmentShader = /* glsl */ `
         float ang = atan(p.x - ro.x, -(p.z - ro.z));
         float u = ang * uRadius + uWallOff;
         float v = p.y;
+        /* the cursor bends the wall itself: the arc length and the height of
+           the surface under the pointer are pushed away from it, and a gentle
+           ring travels out of the same patch — so the lattice, the joint
+           between two screens and whatever they are showing all move on the
+           same rubber */
+        u += (pdelta.x * 0.17 + lensRing * 0.05) * lensField;
+        v += (pdelta.y * 0.17 + lensRing * 0.05) * lensField;
         float fine = gridMask(vec2(u, v), uCell);
         float maj = gridMask(vec2(u * 0.5, v), uMajorCell);
         structure += fine * 0.42 * fade;
@@ -176,7 +206,9 @@ const fragmentShader = /* glsl */ `
         vec2 sc = floor(vec2(u, v) / uCell);
         vec2 sf = fract(vec2(u, v) / uCell);
         float joint = 0.5 - max(abs(sf.x - 0.5), abs(sf.y - 0.5));
-        screenGap = max(screenGap, (1.0 - smoothstep(0.014, 0.055, joint)) * fade);
+        float jointMask = (1.0 - smoothstep(0.014, 0.055, joint)) * fade;
+        screenJoint = max(screenJoint, jointMask);
+        screenGap = max(screenGap, jointMask);
 
         /* mosaic: big dark panels, each lit a little differently, crossed by
            a soft diagonal sheen — the tiled wall of the key visual. The
@@ -231,7 +263,11 @@ const fragmentShader = /* glsl */ `
           float bandTop = floor(mix(-1.0, 3.0, hash11(uCutSeed)));
           float bandRow = sc.y - bandTop;
           float inBand = step(-0.5, bandRow) * (1.0 - step(uScreenRows - 0.5, bandRow));
-          vec2 shotUv = vec2(mod(sc.x, uScreenCols) + sf.x, bandRow + sf.y) / vec2(uScreenCols, uScreenRows);
+          /* the picture slides a little *inside* its cell as well: the glass
+             and the image on it do not bend by the same amount, and that
+             difference is what makes the pixels read as liquid */
+          vec2 inner = sf + pdelta * lensField * 0.24;
+          vec2 shotUv = vec2(mod(sc.x, uScreenCols) + inner.x, bandRow + inner.y) / vec2(uScreenCols, uScreenRows);
           vec4 shot = texture2D(uScreens, shotUv);
           float cover = shot.a * inBand * clamp(fade * 1.7, 0.0, 1.0);
           screenInk = mix(screenInk, shot.rgb, cover);
@@ -275,17 +311,26 @@ const fragmentShader = /* glsl */ `
     paper *= 1.0 - clamp(tiles, -0.6, 0.6) * 0.06;
     color = mix(color, paper, uSheet);
 
+    /* the light the cursor brings with it — the wall's own cells first, so the
+       screens answer even when nothing is being broadcast */
+    color += mix(uLine, vec3(1.0), 0.35) * lensLamp * 0.09;
+
     /* ---- the wall's broadcast moment ------------------------------------
        A lit monitor *replaces* the wall where it stands: its own dark glass,
        and whatever the feed is showing on it. Nothing else on the frame moves
        and no cell lights up unless the feed has something to put there. */
     if (uScreen > 0.002) {
-      color = mix(color, screenInk, clamp(screenMask, 0.0, 1.0) * uScreen);
+      float lit = clamp(screenMask, 0.0, 1.0) * uScreen;
+      color = mix(color, screenInk + lensLamp * 0.1, lit);
+      /* the bezel cuts the picture too: a broadcast is still made of separate
+         screens, and a joint that vanished inside a lit image would turn the
+         wall into one flat panel */
+      color *= 1.0 - clamp(screenJoint, 0.0, 1.0) * 0.92 * lit;
     }
 
-    /* ---- CRT sweep + scanlines (light on dark, dust on paper) ---------- */
-    float sweep = fract(uTime * 0.021);
-    color += uLine * exp(-pow((vUv.y - sweep) * 46.0, 2.0)) * 0.02 * (1.0 - uSheet);
+    /* ---- scanlines (light on dark, dust on paper) ----------------------
+       The glass, and only the glass: the band that used to travel down the
+       frame every fourteen seconds is gone (see Scanlines.tsx). */
     float scan = sin(vUv.y * 900.0) * 0.5 + 0.5;
     color *= 1.0 + (scan - 0.5) * 0.016 * (1.0 - uSheet * 0.7);
 
@@ -316,6 +361,10 @@ export default function Backdrop() {
   /** what that moment is showing, kept for the feed painter */
   const momentWord = useRef('')
   const momentSeed = useRef(0)
+  /** how long that moment runs — the feed is redrawn at a fixed frame rate */
+  const momentDuration = useRef(7.2)
+  /** how strongly the wall answers the cursor right now (0 → 1, eased) */
+  const hover = useRef(0)
 
   const uniforms = useMemo(
     () => ({
@@ -346,6 +395,9 @@ export default function Backdrop() {
       uTravel: { value: 0 },
       uHero: { value: 0 },
       uWallOff: { value: 0 },
+      uGround: { value: 1 },
+      uPointer: { value: new THREE.Vector2(0.5, 0.5) },
+      uHover: { value: 0 },
       uScreen: { value: 0 },
       uCutSeed: { value: 0 },
       uScreenCols: { value: SCREEN_COLS },
@@ -394,6 +446,14 @@ export default function Backdrop() {
     u.uTravel.value = travel
     u.uHero.value = hero
     u.uWallOff.value = travel * 9
+    /* the wall answers the cursor: the pointer is published in the frame's own
+       coordinates, and the strength fades in as the visitor moves — fluidly,
+       and never harder than it needs to be on the light sheet, where a
+       displaced lattice reads as a fault rather than as give */
+    const inside = pointer.inside ? 1 : 0
+    hover.current = ease(hover.current, inside * (1 - palette.sheet * 0.8), 3.2, delta)
+    u.uPointer.value.set((pointer.x + 1) * 0.5, (pointer.y + 1) * 0.5)
+    u.uHover.value = hover.current
 
     u.uBase.value.copy(palette.base).lerp(room.base, dark)
     u.uLine.value.copy(palette.line).lerp(room.line, dark)
@@ -416,6 +476,7 @@ export default function Backdrop() {
     u.uVignette.value = palette.vignette
     u.uRadius.value = palette.radius
     u.uFloorY.value = palette.floorY
+    u.uGround.value = palette.ground
 
     /* ---- the wall's broadcast moment ------------------------------------
        The DOM publishes what should be written and for how long; the shader
@@ -428,6 +489,7 @@ export default function Backdrop() {
       u.uCutSeed.value = moment.seed
       momentWord.current = moment.word
       momentSeed.current = moment.seed
+      momentDuration.current = moment.duration
     }
 
     /* one clock for both canvases: the gem reads the same envelope, so the
@@ -437,7 +499,7 @@ export default function Backdrop() {
     /* the feed is repainted a few times a second: the picture holds still
        between two takes, which is what reads as a screen rather than a
        continuously animated texture */
-    updateScreens(momentWord.current, momentSeed.current, wallPhase(at))
+    updateScreens(momentWord.current, momentSeed.current, wallPhase(at), momentDuration.current)
     /* The DOM scrim takes the room's light too: the page's own wash turns with
        the backdrop, so the whole frame changes colour and not just the canvas.
        Throttled to ~10 writes a second — during a crossfade that is enough for

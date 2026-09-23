@@ -8,7 +8,6 @@ import {
 } from 'react'
 import { Canvas } from '@react-three/fiber'
 import Backdrop from './Backdrop'
-import Drift from './Drift'
 import Crystal from './Crystal'
 import WordLayer from './WordLayer'
 import Effects from './Effects'
@@ -132,7 +131,6 @@ export default function Scene() {
           <Suspense fallback={null}>
             <Backdrop />
             <WordLayer />
-            <Drift />
           </Suspense>
         </Canvas>
       </div>

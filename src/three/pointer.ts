@@ -4,7 +4,14 @@ import { useEffect } from 'react'
  * Shared normalised pointer (-1 → 1) used by every 3D layer for parallax.
  * Kept outside of React state on purpose: it is read inside rAF loops only.
  */
-export const pointer = { x: 0, y: 0, tx: 0, ty: 0 }
+export const pointer = {
+  x: 0,
+  y: 0,
+  tx: 0,
+  ty: 0,
+  /** false while the cursor is outside the window: the wall stops answering */
+  inside: false,
+}
 
 export function useGlobalPointer() {
   useEffect(() => {
@@ -13,10 +20,12 @@ export function useGlobalPointer() {
     const onMove = (event: PointerEvent) => {
       pointer.tx = (event.clientX / window.innerWidth) * 2 - 1
       pointer.ty = -((event.clientY / window.innerHeight) * 2 - 1)
+      pointer.inside = true
     }
     const onLeave = () => {
       pointer.tx = 0
       pointer.ty = 0
+      pointer.inside = false
     }
 
     window.addEventListener('pointermove', onMove, { passive: true })

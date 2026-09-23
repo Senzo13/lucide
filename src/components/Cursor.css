@@ -17,20 +17,21 @@
   width: 6px;
   height: 6px;
   margin: -3px 0 0 -3px;
-  border-radius: 50%;
   background: #fff;
   mix-blend-mode: difference;
 }
 
+/* The cursor is a square: this page is a grid and an instrument panel, and a
+   round ring floating over a wall of screens reads as an applique rather than
+   as part of the room. The frame is never filled, only outlined. */
 .cursor__ring {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
-  margin: -17px 0 0 -17px;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0 0 -11px;
   border: 1px solid rgba(255, 255, 255, 0.55);
-  border-radius: 50%;
   transition:
     width 0.35s var(--ease-out),
     height 0.35s var(--ease-out),
@@ -51,18 +52,18 @@
 
 .cursor[data-variant='hover'] .cursor__ring,
 .cursor[data-variant='text'] .cursor__ring {
-  width: 54px;
-  height: 54px;
-  margin: -27px 0 0 -27px;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
   border-color: rgba(255, 255, 255, 0.85);
   background: rgba(255, 255, 255, 0.06);
 }
 
 .cursor[data-variant='view'] .cursor__ring,
 .cursor[data-variant='drag'] .cursor__ring {
-  width: 82px;
-  height: 82px;
-  margin: -41px 0 0 -41px;
+  width: 48px;
+  height: 48px;
+  margin: -24px 0 0 -24px;
   border-color: rgba(168, 85, 247, 0.9);
   background: rgba(168, 85, 247, 0.12);
 }

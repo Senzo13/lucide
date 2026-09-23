@@ -20,21 +20,6 @@
   opacity: 0.55;
 }
 
-.scanlines__sweep {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 34vh;
-  background: linear-gradient(
-    to bottom,
-    rgba(168, 85, 247, 0) 0%,
-    rgba(168, 85, 247, 0.05) 42%,
-    rgba(103, 232, 249, 0.07) 52%,
-    rgba(168, 85, 247, 0) 100%
-  );
-  animation: scan-sweep 14s linear infinite;
-}
-
 .scanlines__grain {
   position: absolute;
   inset: -50%;
@@ -42,15 +27,6 @@
   background-image: radial-gradient(rgba(255, 255, 255, 0.5) 0.5px, rgba(0, 0, 0, 0) 0.6px);
   background-size: 3px 3px;
   animation: grain-shift 1.6s steps(3, end) infinite;
-}
-
-@keyframes scan-sweep {
-  0% {
-    transform: translate3d(0, -40vh, 0);
-  }
-  100% {
-    transform: translate3d(0, 140vh, 0);
-  }
 }
 
 @keyframes grain-shift {
@@ -66,11 +42,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scanlines__sweep,
   .scanlines__grain {
     animation: none;
-  }
-  .scanlines__sweep {
-    top: 30vh;
   }
 }

@@ -47,6 +47,15 @@ export type Palette = {
   floorY: number
   /** opacity of the giant ghost wordmark parked on the far wall */
   word: number
+  /**
+   * How much of the grid lands on the ground and the ceiling (0 → 1).
+   *
+   * The key visual is a wall of screens and nothing else: under it there is no
+   * floor lattice at all — no cells on the ground, no light pooling in front of
+   * the camera. The floor comes back further down the document, where the room
+   * is read as a corridor rather than as the wall itself.
+   */
+  ground: number
 }
 
 const make = (
@@ -69,6 +78,7 @@ const make = (
   radius: number,
   floorY: number,
   word: number,
+  ground: number,
 ): Palette => ({
   base: new THREE.Color(base),
   line: new THREE.Color(line),
@@ -89,6 +99,7 @@ const make = (
   radius,
   floorY,
   word,
+  ground,
 })
 
 /**
@@ -102,37 +113,42 @@ const make = (
  * greys, not hues): the colour of the page is the room's *mood* — one slow red
  * drift per cycle, never a tint per section. That is what keeps the backdrop
  * from changing colour and elements as the visitor scrolls.
+ *
+ * `tileW` / `tileH` are always a *whole number of screens*, so the joints
+ * between the mosaic panels land on the grid of the wall instead of cutting
+ * across it: a video wall is built out of complete tiles, never out of half a
+ * screen.
  */
 export const PALETTES: Record<WorldMode, Palette> = {
   /** key visual: the reference itself — black tiled wall, white rules, white shafts */
   space: make(
     '#040405', '#cfcfcf', '#ffffff', '#8e8e8e',
-    0.58, 4.6, 0.028, 0.28, 0.3, 0.3,
-    2.6, 1.7, 0.62, 1.15, 0, 1, 7.6, -1.5, 0.05,
+    0.85, 6.8, 0.028, 0.28, 0.3, 0.3,
+    3.4, 2.55, 0.62, 1.15, 0, 1, 7.6, -1.5, 0.05, 0,
   ),
   /** news + projects: the camera sinks deeper into the same cold room */
   hall: make(
     '#040506', '#c9cfd8', '#ffffff', '#7d8590',
     0.44, 3.52, 0.05, 0.56, 0.66, 0.56,
-    3.2, 1.9, 0.26, 0.5, 0, 1, 8.4, -1.5, 0.15,
+    3.08, 1.76, 0.26, 0.5, 0, 1, 8.4, -1.5, 0.15, 1,
   ),
   /** manifesto: the same room as a light blueprint sheet — ink on paper */
   blueprint: make(
     '#e8e6de', '#8f96b6', '#3c46c4', '#b9bede',
     0.34, 2.72, 0.05, 0.5, 0.8, 0.3,
-    2.4, 1.5, 0.16, 0, 1, 0.22, 8.4, -1.5, 0.14,
+    2.38, 1.36, 0.16, 0, 1, 0.22, 8.4, -1.5, 0.14, 1,
   ),
   /** studio + contact: the room flattens — a technical grid with no temperature */
   grid: make(
     '#040607', '#ccd2d2', '#f1eade', '#7c8385',
     0.32, 2.56, 0.045, 0.54, 0.48, 0.48,
-    2.4, 1.5, 0.16, 0.24, 0, 1, 8.8, -1.5, 0.11,
+    2.56, 1.6, 0.16, 0.24, 0, 1, 8.8, -1.5, 0.11, 1,
   ),
   /** outro: the room has almost dissolved, and holds its red dusk */
   outro: make(
     '#080506', '#e2d2d2', '#ffffff', '#8a5a58',
     0.36, 2.88, 0.06, 0.44, 0.4, 0.38,
-    2.4, 1.5, 0.1, 0, 0, 1, 9.2, -1.5, 0.08,
+    2.52, 1.44, 0.1, 0, 0, 1, 9.2, -1.5, 0.08, 1,
   ),
 }
 
@@ -180,6 +196,7 @@ export function blendPalette(env: EnvState, out: Palette) {
   out.radius = lerp(a.radius, b.radius, t)
   out.floorY = lerp(a.floorY, b.floorY, t)
   out.word = lerp(a.word, b.word, t)
+  out.ground = lerp(a.ground, b.ground, t)
   return out
 }
 
@@ -202,8 +219,9 @@ export function createPalette(sheet = 0): Palette {
     streak: 0.4,
     sheet,
     vignette: 1,
-    radius: 8.4,
-    floorY: -1.5,
-    word: 0.12,
-  }
+  radius: 8.4,
+  floorY: -1.5,
+  word: 0.12,
+  ground: 1,
+}
 }
