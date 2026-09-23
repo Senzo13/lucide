@@ -107,8 +107,8 @@ export const PALETTES: Record<WorldMode, Palette> = {
   /** key visual: the reference itself — black tiled wall, white rules, white shafts */
   space: make(
     '#040405', '#cfcfcf', '#ffffff', '#8e8e8e',
-    0.46, 4.6, 0.028, 0.28, 0.3, 0.3,
-    2.6, 1.7, 0.5, 1.15, 0, 1, 7.6, -1.5, 0.05,
+    0.58, 4.6, 0.028, 0.28, 0.3, 0.3,
+    2.6, 1.7, 0.62, 1.15, 0, 1, 7.6, -1.5, 0.05,
   ),
   /** news + projects: the camera sinks deeper into the same cold room */
   hall: make(

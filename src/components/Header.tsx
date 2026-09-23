@@ -2,7 +2,7 @@ import { useEffect, useRef, type MouseEvent as ReactMouseEvent } from 'react'
 import clsx from 'clsx'
 import { site } from '../content/site'
 import { audio, blip } from '../lib/audio'
-import { scrollToSection } from '../lib/scroll'
+import { channelCut } from '../lib/channel'
 import { useAppStore } from '../store/useAppStore'
 import WaveText from './WaveText'
 import './Header.css'
@@ -47,7 +47,7 @@ export default function Header() {
 
   const go = (href: string) => (event: ReactMouseEvent) => {
     event.preventDefault()
-    scrollToSection(href)
+    channelCut(href)
   }
 
   return (

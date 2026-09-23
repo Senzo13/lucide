@@ -31,6 +31,17 @@ export type Discipline = {
   items: string[]
 }
 
+/**
+ * One entry per chapter of the journey: what the channel cut paints on the
+ * mosaic while the page swaps, and the ident it prints in the corner.
+ * `label` is what the cells spell out letter by letter, `tag` is the HUD
+ * read-out above them.
+ */
+export type ChannelIdent = {
+  label: string
+  tag: string
+}
+
 export const site = {
   name: 'LUCIDE',
   version: 'LUCIDE v1.0',
@@ -58,6 +69,18 @@ export const site = {
     reset: 'RÉINITIALISER LA VUE',
     drag: 'GLISSER POUR ORBITER',
   },
+  /* the broadcast identity of every chapter — the channel cut between two
+     sections spells `label` out across its mosaic and prints `tag` in the
+     corner (see `src/components/ChannelWipe.tsx`) */
+  channels: {
+    top: { label: 'ACCUEIL', tag: 'CANAL 01 · OUVERTURE' },
+    actualites: { label: 'ACTUALITÉS', tag: 'CANAL 02 · JOURNAL' },
+    projets: { label: 'PROJETS', tag: 'CANAL 03 · PRODUCTIONS' },
+    'a-propos': { label: 'MANIFESTE', tag: 'CANAL 04 · À PROPOS' },
+    studio: { label: 'STUDIO', tag: 'CANAL 05 · PLATEAU' },
+    contact: { label: 'CONTACT', tag: 'CANAL 06 · LIAISON' },
+    footer: { label: 'GÉNÉRIQUE', tag: 'CANAL 07 · FIN DE BANDES' },
+  } satisfies Record<string, ChannelIdent>,
   hero: {
     eyebrow: 'ACTUALITÉS',
     scroll: 'DÉFILER POUR EXPLORER',

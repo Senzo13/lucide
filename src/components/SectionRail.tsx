@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { scrollToSection } from '../lib/scroll'
+import { channelCut } from '../lib/channel'
 import { useAppStore } from '../store/useAppStore'
 import './SectionRail.css'
 
@@ -55,7 +55,7 @@ export default function SectionRail() {
               className="rail__tick"
               data-cursor="hover"
               aria-current={i === index ? 'true' : undefined}
-              onClick={() => scrollToSection(`#${stop.id}`)}
+              onClick={() => channelCut(`#${stop.id}`)}
             >
               <span className="rail__dash" aria-hidden="true" />
               <span className="u-mono rail__label">{stop.label}</span>

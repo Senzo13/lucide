@@ -1,7 +1,7 @@
 import { useEffect, useRef, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import HeroType from '../components/HeroType'
 import { site } from '../content/site'
-import { scrollToSection } from '../lib/scroll'
+import { channelCut } from '../lib/channel'
 import { useAppStore } from '../store/useAppStore'
 import './Hero.css'
 
@@ -15,7 +15,7 @@ export default function Hero() {
 
   const goNews = (event: ReactMouseEvent) => {
     event.preventDefault()
-    scrollToSection('#actualites')
+    channelCut('#actualites')
   }
 
   return (

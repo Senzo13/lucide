@@ -54,9 +54,14 @@ Every component/section imports its own CSS file next to it
 20  main content (sections)       --z-content
 40  chrome: Header, SoundBar      --z-chrome
 60  SideMenu overlay              --z-menu
+70  channel cut (ChannelWipe)     --z-cut
 80  Cursor                        --z-cursor
 100 Loader                        --z-loader
 ```
+
+The channel cut is the only layer that is allowed to cover the chrome and the
+side menu: it is what the page looks like *between* two chapters. It never
+covers the cursor — that one belongs to the visitor, not to the page.
 
 Sections live in normal document flow inside `<main>`; the canvas is
 `position: fixed; inset: 0` for the whole document. The key-visual layer stops
@@ -81,12 +86,18 @@ State: `progress`, `sceneReady`, `loaded`, `audioDecision ('pending'|'on'|'off')
 `viewRotation [x,y,z]`, `resetNonce`, `glitchNonce`, `activeSection`.
 `scroll {y, progress, heroProgress}` (live scroll metrics) and
 `env {from, to, mix, travel, center}` (live environment blend — see 5.2c).
+`channel: ChannelCue | null` — the last channel change, `{nonce, label, tag,
+href, variant}` (see 5.7); the overlay keys off `nonce`, never off the object.
+`wallMoment: WallMoment | null` — the last word the *wall itself* wrote,
+`{nonce, word, seed, duration}`, published by `HeroSignal` (see 5.8) and
+rendered by the backdrop shader.
 
 Actions: `setProgress(n)`, `setSceneReady(v)`, `setLoaded(v)`, `decideAudio(v)`,
 `toggleAudio()`, `setAudioLevels(levels)`, `setMenuOpen(v)`,
 `setCursor(variant, label?)`, `setCoords(c)`, `setViewRotation(r)`, `resetView()`,
-`triggerGlitch()`, `setActiveSection(id)`, `setScroll(metrics)`, `setEnv(env)`,
-`setWorldMode(mode, source?)`.
+`triggerGlitch()`, `playChannel(request)`, `setActiveSection(id)`,
+`setScroll(metrics)`, `setEnv(env)`, `setWorldMode(mode, source?)`,
+`writeOnWall(word, duration?)`.
 
 ### 5.2 `src/lib/scroll.ts` (lead)
 
@@ -205,6 +216,7 @@ export default function Loader(): JSX.Element        // intro overlay
 export default function Scanlines(): JSX.Element     // CRT overlay, pointer-events none
 export default function HeroType(props: { text?: string; className?: string }): JSX.Element
 export default function ViewGizmo(): JSX.Element     // right realtime 3D HUD
+export default function ChannelWipe(): JSX.Element   // the channel cut overlay
 ```
 
 `HeroType` renders **only** the giant wordmark (`text` defaults to
@@ -214,6 +226,76 @@ the WebGL crystal (no background, `mix-blend-mode: normal`, transparent).
 `ViewGizmo` renders the whole right-hand HUD block: `VUE 3D TEMPS RÉEL`,
 coordinate dots row bound to `coords`, the circular interactive gizmo
 (drag → `setViewRotation`), and `RÉINITIALISER LA VUE` → `resetView()`.
+
+`ChannelWipe` renders the black mosaic that plays between two chapters (see
+5.7). It is driven entirely by `useAppStore().channel`: it rebuilds its cells on
+every `nonce`, runs one GSAP timeline (~0.9 s, ~0.5 s for the short `cut`
+flavour), and calls `jumpToSection(cue.href)` at the moment the frame is fully
+covered. Under `prefers-reduced-motion` it skips the mosaic entirely.
+
+## 5.7 `src/lib/channel.ts` (lead) — the chapter swap
+
+```ts
+export function channelCut(href: string): void
+```
+
+**Every in-page link on the site goes through this**: header nav and CTA, side
+menu, section rail, footer, the hero news rows. It reads the destination's
+ident from `site.channels` (`{label, tag}` per section id), draws one of four
+flavours — `word` (the destination spelled across the mosaic), `signal` (a lit
+diagonal), `cross` (a full lit row + column) and `cut` (a bare black frame) —
+and publishes it on the store. External hrefs fall through to
+`scrollToSection`; reduced motion falls through to `jumpToSection`.
+
+`?cut=word|signal|cross|cut` pins the flavour for review; without it the cut is
+drawn at random and the same flavour never plays twice in a row.
+
+Rules: do not call `scrollToSection` from a nav handler, and do not move the
+document inside a cut — the jump belongs to the overlay, so it always happens
+while the frame is black. QA: `node scripts/cut-qa.mjs`.
+
+## 5.8 The wall writes — the hero's own broadcast moment
+
+The key visual is a room of screens, and every ten to seventeen seconds the
+wall comes on by itself and writes a word across the cells it is already made
+of. Nothing is laid over the picture: the cells of the existing grid go black,
+some catch the room's own light, some carry the studio's triangle, and a run of
+them spells the word.
+
+```ts
+// src/components/HeroSignal.tsx — renders nothing, owns the clock
+export default function HeroSignal(): null
+
+// src/store/useAppStore.ts
+writeOnWall(word: string, duration?: number): void   // default 3.4 s
+
+// src/three/wall.ts — the shared envelope both canvases read
+export function wallCut(at?: number): number    // 0 → 1 how loud the wall is
+export function wallStep(at?: number): number   // which redraw of the pattern
+
+// src/three/atlas.ts — the glyphs, baked once into an 8×8 canvas
+export function createGlyphAtlas(): THREE.CanvasTexture
+export function glyphIndex(char: string | undefined): number
+```
+
+Rules:
+
+- `HeroSignal` fires **only** while the key visual holds the viewport
+  (`scroll.heroProgress < 0.62` and `worldMode === 'space'`). Nothing about
+  this effect is bound to the scroll — the room speaks on its own.
+- `wallCut` / `wallStep` are the *only* place the moment's timing is decided.
+  The backdrop and the gem both call them, which is why the light the screens
+  throw is the light the stone catches. They are sampled by `performance.now()`
+  because the two canvases do not share a clock.
+- `Backdrop.tsx` writes its uniforms through `material.uniforms`, **never**
+  through the memoised object handed to `<shaderMaterial>`: R3F deep-copies
+  that object, so writing to it updates nothing and freezes the canvas on its
+  first frame.
+- The screens are separated by a black joint (`screenGap` in the fragment
+  shader): wide enough to read as a bezel, thin enough to keep the grid the
+  subject. The fine cell of the `space` world is `0.58` world units so the
+  screens read as screens.
+- QA: `?wall=LUCIDE` puts one word on the wall and holds it.
 
 ## 6. Visual spec (from the screenshot — 1512×850 baseline)
 
@@ -261,7 +343,9 @@ Layout (desktop)
 Motion: page-load mask reveal, wordmark letters rising with blur, crystal
 idle rotation + mouse parallax, scanline sweep, glitch bursts on
 `glitchNonce`, magnetic cursor, hover states that slide text out and back
-(`.u-pill`), section content revealing on scroll.
+(`.u-pill`), section content revealing on scroll, and the channel cut between
+chapters (5.7) — a black mosaic that spells the destination out of dead cells,
+lit blocks and the studio's triangle before the new chapter is revealed.
 
 Scroll choreography (must match the reference's feel — the camera never
 stops):

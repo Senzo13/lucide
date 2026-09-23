@@ -1,7 +1,7 @@
 import { useEffect, useRef, type CSSProperties, type MouseEvent as ReactMouseEvent } from 'react'
 import { site } from '../content/site'
 import { revealOnView } from '../lib/animate'
-import { scrollToSection } from '../lib/scroll'
+import { channelCut } from '../lib/channel'
 import WaveText from '../components/WaveText'
 import './Footer.css'
 
@@ -17,7 +17,7 @@ export default function Footer() {
   const go = (href: string) => (event: ReactMouseEvent) => {
     if (!href.startsWith('#')) return
     event.preventDefault()
-    scrollToSection(href)
+    channelCut(href)
   }
 
   return (

@@ -1,6 +1,7 @@
 import { useEffect, type MouseEvent as ReactMouseEvent } from 'react'
 import { site } from '../content/site'
-import { stopScroll, scrollToSection } from '../lib/scroll'
+import { stopScroll } from '../lib/scroll'
+import { channelCut } from '../lib/channel'
 import { useAppStore } from '../store/useAppStore'
 import WaveText from './WaveText'
 import './SideMenu.css'
@@ -25,8 +26,10 @@ export default function SideMenu() {
 
   const go = (href: string) => (event: ReactMouseEvent) => {
     event.preventDefault()
+    /* the cut covers the menu on its way out, so the two can run together:
+       when the frame clears the visitor is on the new chapter, menu closed */
     setMenuOpen(false)
-    window.setTimeout(() => scrollToSection(href), 260)
+    channelCut(href)
   }
 
   return (

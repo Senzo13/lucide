@@ -5,6 +5,8 @@ import { pointer, ease } from './pointer'
 import { useAppStore } from '../store/useAppStore'
 import { blendPalette, createPalette } from './palette'
 import { createRoom, sampleRoom } from './mood'
+import { wallCut, wallPhase } from './wall'
+import { SCREEN_COLS, SCREEN_ROWS, screenTexture, updateScreens } from './screens'
 
 const vertexShader = /* glsl */ `
   varying vec2 vUv;
@@ -61,10 +63,25 @@ const fragmentShader = /* glsl */ `
   uniform float uHero;
   uniform float uWallOff;
 
+  /* the wall's own broadcast moment: while uScreen is up, the cells of the
+     *existing* grid behave as monitors and show what the CPU painted for them */
+  uniform float uScreen;
+  uniform float uCutSeed;
+  uniform float uScreenCols;
+  uniform float uScreenRows;
+  uniform sampler2D uScreens;
+
   const float CEIL_Y = 6.4;
 
   float hash21(vec2 p) {
     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+  }
+
+  float hash11(float p) {
+    p = fract(p * 0.1031);
+    p *= p + 33.33;
+    p *= p + p;
+    return fract(p);
   }
 
   /* Anti-aliased distance (in cells) to the nearest grid line of either axis.
@@ -101,6 +118,9 @@ const fragmentShader = /* glsl */ `
     float glow = 0.0;        // bleed right under the camera
     float near = 0.0;        // how close the visible structure is
     float crossings = 0.0;   // registration crosses (blueprint sheet only)
+    float screenGap = 0.0;   // the black joint between two screens
+    float screenMask = 0.0;  // how much of this fragment is a lit monitor
+    vec3  screenInk = vec3(0.0); // what that monitor is showing
 
     /* ---- floor --------------------------------------------------------- */
     if (rd.y < -0.0001) {
@@ -112,6 +132,11 @@ const fragmentShader = /* glsl */ `
       structure += fine * 0.5 * fade;
       majorMask += maj * 0.85 * fade;
       glow += exp(-length(p.xz - ro.xz) * 0.3) * fade * 0.85;
+      /* the floor is tiled with the same screens as the wall, so it takes the
+         same black joint between them */
+      vec2 fg = p.xz / uCell;
+      float fgap = 0.5 - max(abs(fract(fg.x) - 0.5), abs(fract(fg.y) - 0.5));
+      screenGap = max(screenGap, (1.0 - smoothstep(0.012, 0.052, fgap)) * fade);
       near = max(near, fade);
     }
 
@@ -143,6 +168,16 @@ const fragmentShader = /* glsl */ `
         structure += fine * 0.42 * fade;
         majorMask += maj * 1.0 * fade;
 
+        /* The wall is not one sheet: it is a mosaic of screens, and between two
+           screens there is a black joint. Wide enough to read as a bezel at
+           the front of the room, thin enough that the grid stays the subject —
+           and it is what makes a lit cell read as a *screen* coming on, since
+           its light stops at the joint instead of bleeding into its neighbour. */
+        vec2 sc = floor(vec2(u, v) / uCell);
+        vec2 sf = fract(vec2(u, v) / uCell);
+        float joint = 0.5 - max(abs(sf.x - 0.5), abs(sf.y - 0.5));
+        screenGap = max(screenGap, (1.0 - smoothstep(0.014, 0.055, joint)) * fade);
+
         /* mosaic: big dark panels, each lit a little differently, crossed by
            a soft diagonal sheen — the tiled wall of the key visual. The
            variation is deliberately shallow: the reference's wall is a flat
@@ -150,12 +185,12 @@ const fragmentShader = /* glsl */ `
         vec2 cell = floor(vec2(u / uTileW, v / uTileH));
         float h = hash21(cell);
         float sheen = sin((u * 0.16 + v * 0.42) + h * 6.2831);
-        tiles += (h - 0.5) * 0.3 + sheen * 0.05 * (0.4 + h);
+        tiles += (h - 0.5) * 0.46 + sheen * 0.05 * (0.4 + h);
 
         /* the joint between two panels, so the mosaic reads as built rather
            than as a texture stretched over the wall */
         vec2 edge = abs(fract(vec2(u / uTileW, v / uTileH) + 0.5) - 0.5) * vec2(uTileW, uTileH);
-        seams += (1.0 - clamp(min(edge.x, edge.y) / 0.055, 0.0, 1.0)) * fade;
+        seams += (1.0 - clamp(min(edge.x, edge.y) / 0.075, 0.0, 1.0)) * fade;
 
         /* Light falling on the wall. The reference does not relight the room
            evenly: whole blocks of panels catch the light while their
@@ -181,6 +216,27 @@ const fragmentShader = /* glsl */ `
         vec2 q = abs(fract(vec2(u, v) / (uMajorCell * 4.0)) - 0.5) * (uMajorCell * 4.0);
         float cross = 1.0 - clamp(min(max(abs(q.x), abs(q.y) - 0.28), max(abs(q.y), abs(q.x) - 0.28)) / 0.045, 0.0, 1.0);
         crossings += cross * fade;
+
+        /* ---- the wall's broadcast moment --------------------------------
+           Nothing is laid over the picture here. The *cells that are already
+           on the wall* — the ones the visitor is looking at — go black, catch
+           the room's own light, carry the studio's triangle, and write a word.
+           Tying it to the distance fade keeps the far end of the room quiet,
+           and every
+           colour comes from the palette the room is already using. */
+        if (uScreen > 0.002) {
+          /* a band of the wall is the video wall; it shows one feed, painted
+             on the CPU, and anything it is not showing stays transparent so
+             the room underneath is left exactly as it was */
+          float bandTop = floor(mix(-1.0, 3.0, hash11(uCutSeed)));
+          float bandRow = sc.y - bandTop;
+          float inBand = step(-0.5, bandRow) * (1.0 - step(uScreenRows - 0.5, bandRow));
+          vec2 shotUv = vec2(mod(sc.x, uScreenCols) + sf.x, bandRow + sf.y) / vec2(uScreenCols, uScreenRows);
+          vec4 shot = texture2D(uScreens, shotUv);
+          float cover = shot.a * inBand * clamp(fade * 1.7, 0.0, 1.0);
+          screenInk = mix(screenInk, shot.rgb, cover);
+          screenMask = max(screenMask, cover);
+        }
       }
     }
 
@@ -204,6 +260,9 @@ const fragmentShader = /* glsl */ `
     color += mix(uLine, vec3(1.0), 0.55) * clamp(band, 0.0, 2.0) * uStreak * 0.26 * (0.3 + 0.7 * panel);
     color += uGlow * clamp(glow * 0.07, 0.0, 1.0) * uGlowGain;
 
+    /* ---- the black joint between two screens --------------------------- */
+    color *= 1.0 - clamp(screenGap, 0.0, 1.0) * 0.9;
+
     /* violet bloom sitting on the horizon, behind the prism */
     float horizon = exp(-pow((vUv.y - 0.47) * 6.2, 2.0));
     color += uGlow * horizon * 0.05 * uGlowGain;
@@ -215,6 +274,14 @@ const fragmentShader = /* glsl */ `
     paper = mix(paper, vec3(0.09, 0.10, 0.26), clamp(crossings * 0.5, 0.0, 1.0));
     paper *= 1.0 - clamp(tiles, -0.6, 0.6) * 0.06;
     color = mix(color, paper, uSheet);
+
+    /* ---- the wall's broadcast moment ------------------------------------
+       A lit monitor *replaces* the wall where it stands: its own dark glass,
+       and whatever the feed is showing on it. Nothing else on the frame moves
+       and no cell lights up unless the feed has something to put there. */
+    if (uScreen > 0.002) {
+      color = mix(color, screenInk, clamp(screenMask, 0.0, 1.0) * uScreen);
+    }
 
     /* ---- CRT sweep + scanlines (light on dark, dust on paper) ---------- */
     float sweep = fract(uTime * 0.021);
@@ -244,6 +311,11 @@ export default function Backdrop() {
   const room = useMemo(() => createRoom(), [])
   /** last time the room was published to CSS (the DOM wash rides the room) */
   const publishedAt = useRef(-1)
+  /** the wall's written moment: when it started and how long it lasts */
+  const momentNonce = useRef(0)
+  /** what that moment is showing, kept for the feed painter */
+  const momentWord = useRef('')
+  const momentSeed = useRef(0)
 
   const uniforms = useMemo(
     () => ({
@@ -274,6 +346,11 @@ export default function Backdrop() {
       uTravel: { value: 0 },
       uHero: { value: 0 },
       uWallOff: { value: 0 },
+      uScreen: { value: 0 },
+      uCutSeed: { value: 0 },
+      uScreenCols: { value: SCREEN_COLS },
+      uScreenRows: { value: SCREEN_ROWS },
+      uScreens: { value: screenTexture },
     }),
     [],
   )
@@ -281,6 +358,11 @@ export default function Backdrop() {
   useFrame((state, delta) => {
     const material = materialRef.current
     if (!material) return
+    /* The material owns its uniforms: R3F deep-copies the object handed to
+       <shaderMaterial>, so writing to the memoised one updates nothing at all
+       — the canvas then sits frozen on its first frame. Every frame writes to
+       the material's own set instead. */
+    const u = material.uniforms
 
     pointer.x = ease(pointer.x, pointer.tx, 2.4, delta)
     pointer.y = ease(pointer.y, pointer.ty, 2.4, delta)
@@ -304,36 +386,58 @@ export default function Backdrop() {
     camera.position.z = 6 - travel * 26
     camera.rotation.z = pointer.x * 0.012 + Math.sin(state.clock.elapsedTime * 0.07) * 0.004
 
-    uniforms.uInvProjection.value.copy(camera.projectionMatrixInverse)
-    uniforms.uCameraMatrix.value.copy(camera.matrixWorld)
-    uniforms.uCameraPos.value.copy(camera.position)
-    uniforms.uTime.value = state.clock.elapsedTime
-    uniforms.uAspect.value = size.width / Math.max(1, size.height)
-    uniforms.uTravel.value = travel
-    uniforms.uHero.value = hero
-    uniforms.uWallOff.value = travel * 9
+    u.uInvProjection.value.copy(camera.projectionMatrixInverse)
+    u.uCameraMatrix.value.copy(camera.matrixWorld)
+    u.uCameraPos.value.copy(camera.position)
+    u.uTime.value = state.clock.elapsedTime
+    u.uAspect.value = size.width / Math.max(1, size.height)
+    u.uTravel.value = travel
+    u.uHero.value = hero
+    u.uWallOff.value = travel * 9
 
-    uniforms.uBase.value.copy(palette.base).lerp(room.base, dark)
-    uniforms.uLine.value.copy(palette.line).lerp(room.line, dark)
-    uniforms.uMajor.value.copy(palette.major).lerp(room.major, dark)
-    uniforms.uGlow.value.copy(palette.glow).lerp(room.glow, dark)
-    uniforms.uCell.value = palette.cell
-    uniforms.uMajorCell.value = palette.majorCell
-    uniforms.uFogK.value = palette.fogK
-    uniforms.uLineGain.value = palette.lineGain
-    uniforms.uMajorGain.value = palette.majorGain
-    uniforms.uGlowGain.value = palette.glowGain
-    uniforms.uTileW.value = palette.tileW
-    uniforms.uTileH.value = palette.tileH
-    uniforms.uTileGain.value = palette.tileGain
+    u.uBase.value.copy(palette.base).lerp(room.base, dark)
+    u.uLine.value.copy(palette.line).lerp(room.line, dark)
+    u.uMajor.value.copy(palette.major).lerp(room.major, dark)
+    u.uGlow.value.copy(palette.glow).lerp(room.glow, dark)
+    u.uCell.value = palette.cell
+    u.uMajorCell.value = palette.majorCell
+    u.uFogK.value = palette.fogK
+    u.uLineGain.value = palette.lineGain
+    u.uMajorGain.value = palette.majorGain
+    u.uGlowGain.value = palette.glowGain
+    u.uTileW.value = palette.tileW
+    u.uTileH.value = palette.tileH
+    u.uTileGain.value = palette.tileGain
     /* the panels take the room's light (dimmed), and keep their own ink on the
        light sheet where a coloured wash would read as a stain */
-    uniforms.uTile.value.copy(palette.base).lerp(room.panel, dark)
-    uniforms.uStreak.value = palette.streak
-    uniforms.uSheet.value = palette.sheet
-    uniforms.uVignette.value = palette.vignette
-    uniforms.uRadius.value = palette.radius
-    uniforms.uFloorY.value = palette.floorY
+    u.uTile.value.copy(palette.base).lerp(room.panel, dark)
+    u.uStreak.value = palette.streak
+    u.uSheet.value = palette.sheet
+    u.uVignette.value = palette.vignette
+    u.uRadius.value = palette.radius
+    u.uFloorY.value = palette.floorY
+
+    /* ---- the wall's broadcast moment ------------------------------------
+       The DOM publishes what should be written and for how long; the shader
+       does the writing. The envelope is computed here, per frame, so the
+       moment fades in, steps through a handful of patterns and fades out
+       without anything on the DOM side running a timer. */
+    const moment = store.wallMoment
+    if (moment && moment.nonce !== momentNonce.current) {
+      momentNonce.current = moment.nonce
+      u.uCutSeed.value = moment.seed
+      momentWord.current = moment.word
+      momentSeed.current = moment.seed
+    }
+
+    /* one clock for both canvases: the gem reads the same envelope, so the
+       light the screens throw is the light the stone catches */
+    const at = performance.now() / 1000
+    u.uScreen.value = wallCut(at)
+    /* the feed is repainted a few times a second: the picture holds still
+       between two takes, which is what reads as a screen rather than a
+       continuously animated texture */
+    updateScreens(momentWord.current, momentSeed.current, wallPhase(at))
     /* The DOM scrim takes the room's light too: the page's own wash turns with
        the backdrop, so the whole frame changes colour and not just the canvas.
        Throttled to ~10 writes a second — during a crossfade that is enough for

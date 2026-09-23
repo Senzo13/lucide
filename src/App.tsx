@@ -6,6 +6,8 @@ import SoundBar from './components/SoundBar'
 import Cursor from './components/Cursor'
 import Loader from './components/Loader'
 import Scanlines from './components/Scanlines'
+import ChannelWipe from './components/ChannelWipe'
+import HeroSignal from './components/HeroSignal'
 import SectionRail from './components/SectionRail'
 import Hud from './components/Hud'
 import Marks from './components/Marks'
@@ -234,6 +236,8 @@ export default function App() {
       <div className="app-shade" aria-hidden="true" />
       <div className="app-wash" aria-hidden="true" />
       <Scanlines />
+      <ChannelWipe />
+      <HeroSignal />
       <Header />
       <SideMenu />
       <SectionRail />

@@ -4,8 +4,8 @@ import * as THREE from 'three'
  * The room changes colour.
  *
  * The page is one continuous room, and every `ROOM_STEP` seconds that room is
- * relit: violet-blue, black and white, violet and yellow, black and white
- * again, red, black and white — then back to the top. Every layer reads the
+ * relit: violet-blue, black and white, green, black and white again, red,
+ * black and white — then back to the top. Every layer reads the
  * same sample (the wall, the wide light shafts, the glass, the drifting marks,
  * the wall lettering and the DOM scrim), so the whole page turns at once
  * instead of one element at a time.
@@ -56,7 +56,7 @@ const blackAndWhite = () => room('#050505', '#0d0d0d', '#d8d8d8', '#ffffff', '#8
 export const ROOMS: Room[] = [
   room('#0b0620', '#2b2f8f', '#8ea6ff', '#ffffff', '#5b3cff'),
   blackAndWhite(),
-  room('#140a22', '#57400a', '#f4cf3f', '#fff6d0', '#7b4cff'),
+  room('#021410', '#0c3a2c', '#7ff0c8', '#eafff6', '#12b78a'),
   blackAndWhite(),
   room('#120405', '#6b1409', '#ff9d8c', '#fff0ec', '#ff3a1f'),
   blackAndWhite(),

@@ -1,0 +1,214 @@
+/* ==========================================================================
+   The channel cut — the black mosaic that covers the page while it swaps
+   chapters. Layout only: every timing lives in `ChannelWipe.tsx`.
+   ========================================================================== */
+
+.cut {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-cut);
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  /* the mosaic is made of cells; this is the backdrop that shows between them
+     and, for the shortest flavour, the black frame itself */
+  background: #04040a;
+}
+
+/* the shortest cut skips the mosaic: the frame is simply black */
+.cut[data-variant='cut'] {
+  background: #030305;
+}
+
+.cut__grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+}
+
+.cut__cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #050507;
+  border-right: 1px solid rgba(255, 255, 255, 0.045);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+/* a dead cell that is not quite as dead — gives the mosaic some depth */
+.cut__cell[data-kind='ghost'] {
+  background: #0e0e12;
+}
+
+/* a block of pure signal */
+.cut__fill {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  opacity: 0;
+}
+
+/* one letter of the destination, printed on a dead cell */
+.cut__letter {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: calc(var(--cut-cell, 88px) * 0.64);
+  line-height: 0.78;
+  letter-spacing: -0.03em;
+  color: #fff;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+/* the studio's triangle, lit inside a cell */
+.cut__tri {
+  width: calc(var(--cut-cell, 88px) * 0.42);
+  height: auto;
+  opacity: 0;
+  will-change: opacity, transform;
+}
+
+.cut__tri[data-tone='red'] {
+  color: var(--accent);
+}
+
+.cut__tri[data-tone='ink'] {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.cut__tri[data-tone='dim'] {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+/* --------------------------------------------------------------------------
+   HUD: the read-out of the broadcast, in the same mono voice as the rest of
+   the chrome. Everything is absolutely placed so it survives any cell pattern.
+   -------------------------------------------------------------------------- */
+
+.cut__hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cut__hud > * {
+  position: absolute;
+  opacity: 0;
+}
+
+.cut__ident {
+  top: clamp(22px, 4vh, 46px);
+  left: var(--pad-x);
+  color: #fff;
+}
+
+.cut__spec {
+  top: calc(clamp(22px, 4vh, 46px) + 20px);
+  left: var(--pad-x);
+  color: var(--ink-faint);
+}
+
+.cut__live {
+  top: clamp(22px, 4vh, 46px);
+  right: var(--pad-x);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+}
+
+.cut__live i {
+  display: block;
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  animation: cut-blink 0.9s steps(2, end) infinite;
+}
+
+.cut__state {
+  right: var(--pad-x);
+  bottom: clamp(22px, 4vh, 46px);
+  color: #fff;
+}
+
+.cut__state--lock {
+  opacity: 0;
+}
+
+/* station bug: the brand, then the chapter being tuned to */
+.cut__plate {
+  position: absolute;
+  left: var(--pad-x);
+  bottom: clamp(22px, 4vh, 46px);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cut__plate-brand {
+  color: var(--ink-faint);
+}
+
+.cut__plate-label {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(24px, 3.6vw, 62px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* a CRT pass over the whole mosaic: scanlines and a corner falloff */
+.cut::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 1px,
+      rgba(0, 0, 0, 0) 1px,
+      rgba(0, 0, 0, 0) 3px
+    ),
+    radial-gradient(120% 90% at 50% 50%, rgba(0, 0, 0, 0) 44%, rgba(0, 0, 0, 0.62) 100%);
+  mix-blend-mode: normal;
+}
+
+@keyframes cut-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0.15;
+  }
+}
+
+@media (max-width: 700px) {
+  .cut__plate {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .cut__state {
+    bottom: auto;
+    top: calc(clamp(22px, 4vh, 46px) + 20px);
+    right: var(--pad-x);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cut__live i {
+    animation: none;
+  }
+}

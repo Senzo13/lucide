@@ -56,6 +56,24 @@ export function scrollToSection(target: string | HTMLElement, offset = 0) {
   }
 }
 
+/**
+ * Land on a `#section` in a single frame, with no travel in between. The
+ * channel cut uses it while the frame is black: the visitor never sees the
+ * page move, they only see the next chapter already running when it clears.
+ * `force` is required because the jump happens while the side menu may still
+ * have the scroll frozen.
+ */
+export function jumpToSection(target: string | HTMLElement) {
+  const el = typeof target === 'string' ? document.querySelector<HTMLElement>(target) : target
+  if (!el) return
+  if (lenis) {
+    lenis.scrollTo(el, { immediate: true, force: true })
+    return
+  }
+  const top = el.getBoundingClientRect().top + window.scrollY
+  window.scrollTo({ top, behavior: 'auto' })
+}
+
 export function stopScroll(stop: boolean) {
   if (!lenis) return
   if (stop) lenis.stop()

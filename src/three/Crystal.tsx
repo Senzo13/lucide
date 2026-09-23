@@ -6,6 +6,7 @@ import { useAppStore } from '../store/useAppStore'
 import { blendPalette, createPalette } from './palette'
 import { createRoom, sampleRoom } from './mood'
 import { pointer } from './pointer'
+import { wallCut } from './wall'
 
 /**
  * The refractive centrepiece of the key visual: a *clear gem* — an octahedron,
@@ -274,10 +275,10 @@ const LIQUID_FRAG = /* glsl */ `
 
   void main() {
     /* the waterline: bands running across the stone, warped by its own shape */
-    float y = vPos.y * 3.6 + uTime * 0.55;
-    float warp = sin(vPos.x * 4.6 - uTime * 0.7) * 1.5 + vnoise(vPos * 3.2 + uTime * 0.07) * 2.4;
+    float y = vPos.y * 3.6 + uTime * 0.8;
+    float warp = sin(vPos.x * 4.6 - uTime * 0.9) * 1.5 + vnoise(vPos * 3.2 + uTime * 0.1) * 2.4;
     float band = sin(y + warp) * 0.5 + 0.5;
-    band = smoothstep(0.34, 0.94, band);
+    band = smoothstep(0.4, 0.98, band);
     /* the band is chewed at its edge: poured, not drawn */
     float torn = vnoise(vPos * 7.5 - vec3(0.0, uTime * 0.18, uTime * 0.05));
     band *= smoothstep(0.3, 0.66, torn + 0.32);
@@ -285,13 +286,13 @@ const LIQUID_FRAG = /* glsl */ `
     float ndv = abs(dot(normalize(vNormal), normalize(vView)));
     float edge = pow(1.0 - ndv, 1.5);
     vec3 colour = mix(uColor, uHot, 0.3 + band * 0.55);
-    float a = band * (0.3 + edge * 0.7) * uIntensity;
+    float a = band * (0.45 + edge * 0.55) * uIntensity;
     gl_FragColor = vec4(colour * a, a);
   }
 `
 
 /** how far the surface of the stone travels when it ripples, in world units */
-const RIPPLE = 0.075
+const RIPPLE = 0.12
 
 /**
  * The wave the stone's surface runs on: three slow swells travelling in
@@ -708,20 +709,29 @@ export default function Crystal() {
     rimUniforms.uColor.value.copy(room.major)
     rimUniforms.uEdge.value.copy(room.line).lerp(PRISM_WARM, 0.42)
     rimUniforms.uEdgeCool.value.copy(room.line).lerp(PRISM_COOL, 0.42)
-    rimUniforms.uIntensity.value = (0.95 + Math.sin(idle * 1.05) * 0.12) * visible
+    /* The wall is a screen, and when it comes on the stone is what it lights:
+       the gem takes the room's own line colour, harder, for as long as the
+       picture holds — then goes back to its resting sheen. */
+    const screen = wallCut()
+    rimUniforms.uIntensity.value = (0.95 + Math.sin(idle * 1.05) * 0.12 + screen * 0.85) * visible
+    rimUniforms.uEdge.value.lerp(room.line, screen * 0.7)
+    rimUniforms.uEdgeCool.value.lerp(room.line, screen * 0.5)
 
     /* The halo only exists once the dive has started: at rest the stone sits
        naked on the wordmark, and it is the scroll that lights the room around
        it and lets the glow spread. */
     const halo = Math.max(0, Math.min(1, (hero - 0.06) / 0.5))
     glowUniforms.uColor.value.copy(room.glow)
-    glowUniforms.uIntensity.value = (0.03 + halo * 0.34 + Math.sin(idle * 1.3) * 0.02 * halo) * visible
+    glowUniforms.uIntensity.value =
+      (0.03 + halo * 0.34 + Math.sin(idle * 1.3) * 0.02 * halo + screen * 0.22) * visible
+    /* the light of the screens sits *on* the glass, not inside it */
+    glassMaterial.attenuationColor.copy(room.line).lerp(INK_WHITE, 0.5 - screen * 0.22)
+    glassMaterial.emissiveIntensity = 0.35 + screen * 0.5
 
     /* the heart is white whatever the room is doing: the reference's stone
        burns, and the colour it burns *in* is the room's */
     coreUniforms.uWarm.value.copy(INK_WHITE)
     coreUniforms.uCool.value.copy(room.line)
-    glassMaterial.attenuationColor.copy(room.line).lerp(INK_WHITE, 0.5)
 
     /* the painted stroke sits behind the glass, and faces the camera: it is a
        billboard, so the stone can keep turning inside a light that does not */
@@ -730,7 +740,7 @@ export default function Crystal() {
     massUniforms.uIntensity.value = (0.7 + hero * 0.35) * (0.35 + visible * 0.65)
     liquidUniforms.uTime.value = idle
     liquidUniforms.uColor.value.copy(room.line)
-    liquidUniforms.uIntensity.value = (0.42 + hero * 0.18) * (0.3 + visible * 0.7)
+    liquidUniforms.uIntensity.value = (0.72 + hero * 0.2) * (0.3 + visible * 0.7)
     const face = billboard.current.copy(group.quaternion).invert().multiply(state.camera.quaternion)
     if (massRef.current) massRef.current.quaternion.copy(face)
     if (glowRef.current) glowRef.current.quaternion.copy(face)

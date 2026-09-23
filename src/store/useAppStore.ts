@@ -9,6 +9,50 @@ export type Coordinates = { x: number; y: number; z: number; w: number }
 
 export type CursorVariant = 'default' | 'hover' | 'drag' | 'view' | 'text'
 
+/**
+ * Which flavour of channel cut plays between two chapters. `word` spells the
+ * destination out across the mosaic, `signal` paints a diagonal of lit cells,
+ * `cross` draws a full row + column of them, and `cut` is the shortest — a
+ * black frame with nothing but the ident on it.
+ */
+/**
+ * The flavours of the chapter swap: the mosaic covers the whole frame while
+ * the page jumps to the new section.
+ */
+export type ChannelVariant = 'word' | 'signal' | 'cross' | 'cut'
+
+/** one channel change, published by the nav and played by `ChannelWipe` */
+export type ChannelCue = {
+  /** increments on every cut — the overlay watches this, not the object */
+  nonce: number
+  /** the word the mosaic spells out, uppercase */
+  label: string
+  /** the HUD ident printed while the frame is black, e.g. `CANAL 03` */
+  tag: string
+  /** the anchor the page lands on *while* it is covered */
+  href: string
+  variant: ChannelVariant
+}
+
+export type ChannelRequest = Omit<ChannelCue, 'nonce'>
+
+/**
+ * The hero's own broadcast moment: the wall of cells writes a word across
+ * itself for a few seconds, then goes quiet again. Published by the DOM (see
+ * `src/components/HeroSignal.tsx`), rendered by the backdrop shader, which
+ * paints the *real* cells of the room — no overlay, no second grid.
+ */
+export type WallMoment = {
+  /** increments on every moment — the shader watches this, not the object */
+  nonce: number
+  /** the word the wall spells, uppercase */
+  word: string
+  /** 0 → 1, redraws the pattern of lit / dead / triangle cells */
+  seed: number
+  /** how long the moment lasts, in seconds */
+  duration: number
+}
+
 /** scroll metrics shared with the WebGL scene (read them non-reactively) */
 export type ScrollMetrics = { y: number; progress: number; heroProgress: number }
 
@@ -77,6 +121,10 @@ type AppState = {
   resetNonce: number
   /** increments when the scene should glitch */
   glitchNonce: number
+  /** live channel change — null when no cut is playing */
+  channel: ChannelCue | null
+  /** the wall's current written moment — null until it writes something */
+  wallMoment: WallMoment | null
   activeSection: string
   /** live scroll position — drives the scene choreography */
   scroll: ScrollMetrics
@@ -100,6 +148,8 @@ type AppState = {
   setViewRotation: (r: Vec3) => void
   resetView: () => void
   triggerGlitch: () => void
+  playChannel: (request: ChannelRequest) => void
+  writeOnWall: (word: string, duration?: number) => void
   setActiveSection: (id: string) => void
   setScroll: (metrics: ScrollMetrics) => void
   setEnv: (env: EnvState) => void
@@ -125,6 +175,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   viewRotation: DEFAULT_ROTATION,
   resetNonce: 0,
   glitchNonce: 0,
+  channel: null,
+  wallMoment: null,
   activeSection: 'top',
   scroll: DEFAULT_SCROLL,
   env: DEFAULT_ENV,
@@ -156,6 +208,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       coords: DEFAULT_COORDS,
     })),
   triggerGlitch: () => set((s) => ({ glitchNonce: s.glitchNonce + 1 })),
+
+  /* The cut is fired as a cue: the overlay keys off `nonce`, so hitting the
+     same chapter twice still replays the transition from the top. */
+  playChannel: (request) => set((s) => ({ channel: { ...request, nonce: (s.channel?.nonce ?? 0) + 1 } })),
+
+  writeOnWall: (word, duration = 3.4) =>
+    set((s) => ({
+      wallMoment: {
+        nonce: (s.wallMoment?.nonce ?? 0) + 1,
+        word: word.toUpperCase(),
+        seed: Math.random(),
+        duration,
+      },
+    })),
 
   setActiveSection: (id) => set({ activeSection: id }),
 

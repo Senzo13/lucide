@@ -84,6 +84,9 @@
   --z-content: 20;
   --z-chrome: 40;
   --z-menu: 60;
+  /* the channel cut: it covers the chrome and the side menu, but never the
+     cursor — that one belongs to the visitor, not to the page */
+  --z-cut: 70;
   --z-cursor: 80;
   --z-loader: 100;
 
