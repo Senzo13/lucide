@@ -1,0 +1,61 @@
+.app {
+  position: relative;
+  min-height: 100vh;
+}
+
+/* vertical gradient + vignette laid over the WebGL canvas */
+.app-shade {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-shade);
+  pointer-events: none;
+  /* The mock's heavy corner vignette belongs to the hero. Once the key visual
+     has been scrolled away the shade backs off, so the live corridor stays
+     deep and readable instead of being buried under a black overlay. */
+  opacity: clamp(0.42, calc(1.06 - var(--hero-p, 0) * 0.78), 1);
+  background:
+    /* corner vignette — the reference frame is almost black in the corners */
+    radial-gradient(
+      108% 74% at 50% 46%,
+      rgba(5, 3, 15, 0) 26%,
+      rgba(5, 3, 15, 0.42) 62%,
+      rgba(3, 2, 10, 0.78) 86%,
+      rgba(2, 1, 7, 0.95) 100%
+    ),
+    /* top + bottom rolloff keeps the HUD legible over the grid */
+    linear-gradient(
+      180deg,
+      rgba(4, 2, 12, 0.86) 0%,
+      rgba(4, 2, 12, 0.28) 12%,
+      rgba(5, 3, 15, 0) 34%,
+      rgba(5, 3, 15, 0) 58%,
+      rgba(4, 2, 12, 0.62) 84%,
+      rgba(3, 2, 10, 0.94) 100%
+    );
+  transition: background 0.9s var(--ease-out);
+}
+
+/* the light "blueprint" sheet needs a paper scrim, not a black one */
+html[data-world='blueprint'] .app-shade {
+  background:
+    radial-gradient(
+      108% 74% at 50% 46%,
+      rgba(233, 231, 244, 0) 30%,
+      rgba(228, 226, 242, 0.3) 66%,
+      rgba(222, 220, 238, 0.62) 100%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(233, 231, 244, 0.72) 0%,
+      rgba(233, 231, 244, 0.22) 14%,
+      rgba(233, 231, 244, 0) 36%,
+      rgba(233, 231, 244, 0) 60%,
+      rgba(232, 230, 243, 0.45) 86%,
+      rgba(228, 226, 241, 0.78) 100%
+    );
+}
+
+.app-main {
+  position: relative;
+  z-index: var(--z-content);
+}

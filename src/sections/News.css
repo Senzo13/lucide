@@ -1,0 +1,119 @@
+.news__kicker {
+  color: var(--ink);
+}
+
+.news__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.news__item {
+  border-top: 1px solid var(--line);
+}
+
+.news__item:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.news__link {
+  display: grid;
+  grid-template-columns: 54px 124px minmax(0, 1fr) 34px;
+  grid-template-areas:
+    'index date title arrow'
+    'index date excerpt arrow';
+  align-items: start;
+  gap: 8px var(--gap);
+  padding: clamp(20px, 2.6vh, 34px) 0;
+  transition: background-color 0.5s var(--ease-out), padding-left 0.6s var(--ease-out);
+}
+
+.news__link:hover {
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.14), rgba(124, 58, 237, 0));
+  padding-left: 14px;
+}
+
+.news__index {
+  grid-area: index;
+  color: var(--ink-faint);
+  padding-top: 0.7em;
+}
+
+.news__date {
+  grid-area: date;
+  color: var(--ink-dim);
+  padding-top: 0.7em;
+}
+
+.news__title {
+  grid-area: title;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-variation-settings: 'wdth' 106, 'wght' 800;
+  font-size: clamp(19px, 2.35vw, 42px);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+  transition: color 0.45s var(--ease-out), transform 0.6s var(--ease-out);
+}
+
+.news__arrow {
+  grid-area: arrow;
+  justify-self: end;
+  align-self: center;
+  font-size: clamp(16px, 1.4vw, 24px);
+  color: var(--ink-dim);
+  transition: transform 0.6s var(--ease-out), color 0.45s var(--ease-out);
+}
+
+.news__excerpt {
+  grid-area: excerpt;
+  max-width: 62ch;
+  margin-top: 10px;
+  font-size: var(--fs-body);
+  color: var(--ink-faint);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+
+.news__link:hover .news__title {
+  color: var(--violet-bright);
+  transform: translateX(6px);
+}
+
+.news__link:hover .news__arrow {
+  transform: translateX(8px);
+  color: var(--violet-bright);
+}
+
+.news__link:hover .news__excerpt,
+.news__link:focus-visible .news__excerpt {
+  opacity: 1;
+  transform: none;
+}
+
+@media (hover: none) {
+  .news__excerpt {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .news__link {
+    grid-template-columns: minmax(0, 1fr) 28px;
+    grid-template-areas:
+      'date arrow'
+      'title arrow'
+      'excerpt arrow';
+  }
+
+  .news__index {
+    display: none;
+  }
+
+  .news__excerpt {
+    opacity: 1;
+    transform: none;
+  }
+}

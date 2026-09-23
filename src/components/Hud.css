@@ -1,0 +1,30 @@
+.hud {
+  position: fixed;
+  top: 11vh;
+  right: var(--pad-x);
+  z-index: var(--z-chrome);
+  pointer-events: none;
+  /* it dissolves only while the page is still locked behind the intro */
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 1.2s var(--ease-out) 0.5s, transform 1.3s var(--ease-out) 0.5s;
+}
+
+body[data-locked='false'] .hud {
+  opacity: 1;
+  transform: none;
+}
+
+.hud > * {
+  pointer-events: auto;
+}
+
+html[data-world='blueprint'] .hud {
+  color: rgba(11, 9, 32, 0.7);
+}
+
+@media (max-width: 900px) {
+  .hud {
+    display: none;
+  }
+}

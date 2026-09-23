@@ -1,0 +1,108 @@
+/* The permanent left rail: one tick per chapter, plus the reader's position
+   running down the same hairline. */
+.rail {
+  position: fixed;
+  top: 50%;
+  left: calc(var(--pad-x) * 0.62);
+  z-index: var(--z-chrome);
+  transform: translateY(-50%);
+  display: flex;
+  align-items: stretch;
+  pointer-events: none;
+  color: var(--ink-faint);
+}
+
+.rail__line {
+  position: relative;
+  width: 1px;
+  background: var(--line);
+}
+
+.rail__cursor {
+  position: absolute;
+  left: 0;
+  width: 7px;
+  height: 7px;
+  margin-left: -3px;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  transform: translateY(-50%);
+  transition: top 0.25s linear;
+  pointer-events: none;
+}
+
+.rail__list {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 26px;
+  margin-left: 0;
+}
+
+.rail__item {
+  display: flex;
+  align-items: center;
+}
+
+.rail__tick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  pointer-events: auto;
+  color: inherit;
+}
+
+.rail__dash {
+  display: block;
+  width: 14px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.7;
+  transition: width 0.5s var(--ease-out), opacity 0.4s var(--ease-out);
+}
+
+.rail__label {
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.45s var(--ease-out), transform 0.55s var(--ease-out), color 0.4s var(--ease-out);
+  white-space: nowrap;
+}
+
+.rail__item[data-active='true'] {
+  color: var(--ink);
+}
+
+.rail__item[data-active='true'] .rail__dash {
+  width: 26px;
+  opacity: 1;
+}
+
+.rail__item[data-active='true'] .rail__label,
+.rail__tick:hover .rail__label,
+.rail__tick:focus-visible .rail__label {
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 1180px) {
+  .rail__label {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .rail {
+    display: none;
+  }
+}
+
+html[data-world='blueprint'] .rail {
+  color: rgba(11, 9, 32, 0.55);
+}
+
+html[data-world='blueprint'] .rail__cursor {
+  background: #0b0920;
+  box-shadow: none;
+}

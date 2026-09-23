@@ -1,0 +1,162 @@
+/* The projects chapter pins the viewport: the WebGL carousel turns behind this
+   stage while the caption swaps from one project to the next. */
+.works {
+  position: relative;
+}
+
+.works__stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  padding: 0 var(--pad-x) calc(var(--bar-h) + 26px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.works__head {
+  position: absolute;
+  top: clamp(84px, 12vh, 130px);
+  left: var(--pad-x);
+  right: var(--pad-x);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gap);
+  color: var(--ink-dim);
+}
+
+.works__kicker {
+  color: var(--ink);
+}
+
+.works__caption {
+  max-width: min(52ch, 46vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: auto;
+  animation: work-caption-in 0.9s var(--ease-out) both;
+}
+
+@keyframes work-caption-in {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.works__date {
+  color: var(--ink-faint);
+}
+
+.works__title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-variation-settings: 'wdth' 106, 'wght' 900;
+  font-size: clamp(38px, 5.4vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.works__client {
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.works__summary {
+  max-width: 46ch;
+  font-size: var(--fs-body);
+  color: var(--ink-dim);
+}
+
+.works__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.works__tag {
+  padding: 5px 10px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.works__more {
+  position: absolute;
+  right: var(--pad-x);
+  bottom: calc(var(--bar-h) + 30px);
+  color: var(--ink-dim);
+}
+
+.works__index {
+  position: absolute;
+  right: var(--pad-x);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-align: right;
+  color: var(--ink-faint);
+}
+
+.works__index-item {
+  opacity: 0.4;
+  transition: opacity 0.5s var(--ease-out), color 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+
+.works__index-item[data-active='true'] {
+  opacity: 1;
+  color: #fff;
+  transform: translateX(-6px);
+}
+
+@media (max-width: 900px) {
+  .works {
+    height: auto !important;
+  }
+
+  .works__stage {
+    position: relative;
+    height: auto;
+    min-height: 100svh;
+    padding-top: 26vh;
+    gap: 26px;
+    justify-content: center;
+  }
+
+  .works__head {
+    position: static;
+  }
+
+  .works__caption {
+    max-width: 100%;
+  }
+
+  .works__index,
+  .works__more {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .works {
+    height: auto !important;
+  }
+
+  .works__stage {
+    position: relative;
+    height: auto;
+  }
+}

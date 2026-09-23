@@ -1,0 +1,189 @@
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: var(--z-chrome);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--gap);
+  padding: 26px var(--pad-x) 22px;
+  transition: background-color 0.5s var(--ease-out), backdrop-filter 0.5s var(--ease-out);
+}
+
+.header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--line);
+  opacity: 0;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.header[data-scrolled='true'] {
+  background: linear-gradient(180deg, rgba(5, 3, 15, 0.86) 0%, rgba(5, 3, 15, 0.42) 68%, rgba(5, 3, 15, 0) 100%);
+  backdrop-filter: blur(10px);
+}
+
+.header[data-scrolled='true']::after {
+  opacity: 0.7;
+}
+
+/* the blueprint sheet: the chrome flips with the page, it never stays a black
+   bar pasted over paper */
+html[data-world='blueprint'] .header[data-scrolled='true'] {
+  background: linear-gradient(
+    180deg,
+    rgba(233, 231, 224, 0.92) 0%,
+    rgba(233, 231, 224, 0.5) 68%,
+    rgba(233, 231, 224, 0) 100%
+  );
+}
+
+html[data-world='blueprint'] .header__nav-ghost {
+  color: #6d28d9;
+}
+
+html[data-world='blueprint'] .u-pill:hover {
+  background: #0b0920;
+  border-color: #0b0920;
+  color: #eceae3;
+}
+
+html[data-world='blueprint'] .u-pill > .u-pill__inner > .u-pill__hover {
+  color: #eceae3;
+}
+
+.header__logo {
+  justify-self: start;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(20px, 1.55vw, 27px);
+  letter-spacing: -0.005em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.header__nav {
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: clamp(20px, 3.4vw, 62px);
+}
+
+.header__nav-item {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  font-size: var(--fs-nav);
+  line-height: 1.4;
+  height: 1.4em;
+  color: var(--ink);
+}
+
+.header__nav-inner {
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.55s var(--ease-slot);
+}
+
+.header__nav-ghost {
+  color: var(--violet-bright);
+}
+
+.header__nav-item:hover .header__nav-inner,
+.header__nav-item:focus-visible .header__nav-inner {
+  transform: translateY(-1.4em);
+}
+
+.header__right {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 1.3vw, 22px);
+}
+
+.header__cta {
+  --pill-py: 0.62em;
+  --pill-px: 1.5em;
+  font-size: clamp(11px, 0.85vw, 14px);
+  white-space: nowrap;
+}
+
+.header__sound {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 18px;
+  padding: 2px 4px;
+  opacity: 0.6;
+  transition: opacity 0.4s var(--ease-out);
+}
+
+.header__sound:hover,
+.header__sound:focus-visible,
+.header__sound.is-on {
+  opacity: 1;
+}
+
+.header__sound-bar {
+  display: block;
+  width: 2px;
+  height: 14px;
+  background: var(--ink);
+  transform-origin: 50% 100%;
+  transition: transform 0.14s linear, background-color 0.4s var(--ease-out);
+}
+
+.header__sound.is-on .header__sound-bar {
+  background: var(--violet-bright);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.7);
+}
+
+.header__burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 26px;
+  height: 22px;
+}
+
+.header__burger span {
+  display: block;
+  width: 100%;
+  height: 1px;
+  background: var(--ink);
+  transition: transform 0.4s var(--ease-out);
+}
+
+.header__burger[aria-expanded='true'] span:first-child {
+  transform: translateY(3px) rotate(12deg);
+}
+
+.header__burger[aria-expanded='true'] span:last-child {
+  transform: translateY(-3px) rotate(-12deg);
+}
+
+@media (max-width: 900px) {
+  .header {
+    grid-template-columns: auto 1fr auto;
+    padding: 16px var(--pad-x) 14px;
+  }
+
+  .header__nav {
+    display: none;
+  }
+
+  .header__cta {
+    display: none;
+  }
+
+  .header__burger {
+    display: flex;
+  }
+}

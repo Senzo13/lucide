@@ -1,0 +1,114 @@
+.gizmo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  color: var(--ink-dim);
+  pointer-events: auto;
+}
+
+.gizmo__title {
+  color: var(--ink-dim);
+}
+
+.gizmo__coords {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gizmo__coord {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-faint);
+}
+
+.gizmo__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.gizmo__dot--x {
+  background: var(--violet-bright);
+}
+
+.gizmo__dot--w {
+  background: #fff;
+}
+
+.gizmo__dial {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.gizmo__dial:active {
+  cursor: grabbing;
+}
+
+.gizmo__svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.gizmo__ring {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1;
+}
+
+.gizmo__ring--inner {
+  stroke: var(--line);
+}
+
+.gizmo__axis {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.gizmo__axis--y {
+  stroke: rgba(74, 222, 128, 0.5);
+}
+
+.gizmo__axis--x {
+  stroke: rgba(248, 113, 113, 0.5);
+}
+
+.gizmo__node--up {
+  fill: #22c55e;
+}
+
+.gizmo__node--right {
+  fill: #ef4444;
+}
+
+.gizmo__node--core {
+  fill: #3b82f6;
+}
+
+.gizmo__ball {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, #ffffff, #9ca3af 58%, #4b5563 100%);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  transition: left 0.2s linear, top 0.2s linear;
+  pointer-events: none;
+}
+
+.gizmo__reset {
+  color: var(--ink-dim);
+  transition: color 0.4s var(--ease-out);
+}
+
+.gizmo__reset:hover {
+  color: var(--ink);
+}

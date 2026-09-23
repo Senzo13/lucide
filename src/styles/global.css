@@ -1,0 +1,508 @@
+/* ==========================================================================
+   LUCIDE — global reset, base type and shared primitives
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: auto;
+}
+
+html,
+body {
+  background: var(--bg-0);
+  color: var(--ink);
+  transition: background-color 0.8s var(--ease-out), color 0.8s var(--ease-out);
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.55;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+body[data-locked='true'] {
+  overflow: hidden;
+}
+
+body[data-cursor='custom'],
+body[data-cursor='custom'] * {
+  cursor: none !important;
+}
+
+img,
+svg,
+canvas,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  outline: none;
+}
+
+::selection {
+  background: var(--violet-bright);
+  color: #fff;
+}
+
+/* --- scrollbar (thin, discreet) ---------------------------------------- */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Shared primitives — used by every section / component
+   -------------------------------------------------------------------------- */
+
+.u-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono);
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  line-height: 1.9;
+  text-transform: uppercase;
+  font-variant-ligatures: none;
+}
+
+.u-mono-sm {
+  font-family: var(--font-mono);
+  font-size: var(--fs-mono-xs);
+  letter-spacing: 0.2em;
+  line-height: 1.7;
+  text-transform: uppercase;
+}
+
+.u-dim {
+  color: var(--ink-dim);
+}
+
+.u-faint {
+  color: var(--ink-faint);
+}
+
+.u-rule {
+  display: block;
+  width: 26px;
+  height: 1px;
+  background: var(--line-strong);
+}
+
+.u-rule--wide {
+  width: 100%;
+}
+
+.u-display {
+  font-family: var(--font-display);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 0.84;
+  letter-spacing: -0.008em;
+}
+
+.u-h2 {
+  font-family: var(--font-display);
+  font-weight: 850;
+  font-size: var(--fs-h2);
+  line-height: 0.96;
+  letter-spacing: -0.014em;
+  text-transform: uppercase;
+}
+
+.u-display--wide {
+  font-family: var(--font-display-wide);
+  font-weight: 900;
+  font-variation-settings: 'wdth' 112, 'wght' 900;
+}
+
+.u-caps {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.u-center {
+  text-align: center;
+}
+
+/* pill / slot button (header CTA, sound bar actions) */
+.u-pill {
+  --pill-py: 0.72em;
+  --pill-px: 1.6em;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6em;
+  padding: var(--pill-py) var(--pill-px);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: var(--fs-mono);
+  font-family: var(--font-sans);
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  transition: background-color var(--dur) var(--ease-slot), border-color var(--dur) var(--ease-slot),
+    color var(--dur) var(--ease-slot);
+}
+
+.u-pill > .u-pill__inner {
+  display: block;
+  transition: transform var(--dur) var(--ease-slot);
+}
+
+.u-pill > .u-pill__inner > span {
+  display: block;
+  transition: opacity var(--dur) var(--ease-slot);
+}
+
+.u-pill > .u-pill__inner > .u-pill__hover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  color: #06040f;
+}
+
+.u-pill:hover {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #06040f;
+}
+
+.u-pill:hover > .u-pill__inner {
+  transform: translateY(-100%);
+}
+
+.u-pill:hover > .u-pill__inner > .u-pill__hover {
+  opacity: 1;
+}
+
+/* underline link */
+.u-underline {
+  position: relative;
+  display: inline-block;
+}
+
+.u-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(1);
+  transform-origin: left;
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.u-underline:hover::after {
+  transform: scaleX(0);
+}
+
+/* sections */
+.section {
+  position: relative;
+  z-index: var(--z-content);
+}
+
+.section__inner {
+  width: 100%;
+  padding: var(--section-y) var(--pad-x);
+}
+
+/* --------------------------------------------------------------------------
+   Held chapters — the reference never lets a chapter leave the frame while
+   you read it: the content holds still and the *room* keeps diving behind it.
+   `--hold` is the extra scroll the chapter buys itself beyond one viewport.
+   -------------------------------------------------------------------------- */
+.section--hold > .section__inner {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.section--hold {
+  min-height: calc(100vh * var(--hold, 1.6));
+}
+
+#actualites {
+  --hold: 1.6;
+}
+
+#a-propos {
+  --hold: 2.1;
+}
+
+#studio {
+  --hold: 1.9;
+}
+
+#contact {
+  --hold: 1.9;
+}
+
+@media (max-width: 900px) {
+  .section--hold {
+    min-height: 0;
+  }
+
+  .section--hold > .section__inner {
+    position: relative;
+    min-height: 0;
+  }
+}
+
+/* The WebGL room is `position: fixed` and runs for the whole document, so the
+   sections only *dim* it: they paint a scrim (never an opaque ground), which is
+   what keeps the dive visible behind the editorial content. */
+.section:not(#top)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 70% at 10% 0%, rgba(4, 2, 12, 0.66), rgba(4, 2, 12, 0) 58%),
+    linear-gradient(
+      180deg,
+      rgba(3, 2, 10, 0.72) 0%,
+      rgba(3, 2, 10, 0.2) 26%,
+      rgba(4, 2, 12, 0.16) 64%,
+      rgba(3, 2, 10, 0.7) 100%
+    );
+}
+
+.hair {
+  width: 100%;
+  height: 1px;
+  background: var(--line);
+  border: 0;
+}
+
+/* Deep band used by every section below the hero. It is deliberately a *scrim*
+   and not a wall of colour: the WebGL corridor lives behind the document and
+   keeps changing as you scroll, so the sections have to let it show through
+   while staying readable. */
+.band {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 3, 15, 0.42) 0%,
+    rgba(5, 3, 15, 0.1) 34%,
+    rgba(6, 4, 18, 0.14) 62%,
+    rgba(5, 3, 15, 0.46) 100%
+  );
+  border-top: 1px solid var(--line);
+  isolation: isolate;
+}
+
+.band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(80% 55% at 78% 6%, rgba(124, 58, 237, 0.14), transparent 62%),
+    radial-gradient(60% 45% at 6% 92%, rgba(58, 73, 201, 0.12), transparent 60%);
+}
+
+/* --------------------------------------------------------------------------
+   The light sheet — the reference flips the whole page to paper halfway
+   through the scroll (the "vision" chapter) before diving back into the dark.
+   `App.tsx` publishes the current world on <html>, and the tokens invert with
+   it: same layout, inverted surface.
+   -------------------------------------------------------------------------- */
+html[data-world='blueprint'] {
+  --bg-0: #e9e7e0;
+  --bg-1: #eceae3;
+  --bg-2: #e4e2da;
+  --ink: #0b0920;
+  --ink-dim: rgba(11, 9, 32, 0.74);
+  --ink-faint: rgba(11, 9, 32, 0.5);
+  --ink-ghost: rgba(11, 9, 32, 0.16);
+  --line: rgba(11, 9, 32, 0.16);
+  --line-strong: rgba(11, 9, 32, 0.42);
+  --glass: rgba(255, 255, 255, 0.52);
+  --glass-strong: rgba(255, 255, 255, 0.78);
+  color-scheme: light;
+}
+
+/* the sheet scrim: paper and ink instead of black glass */
+html[data-world='blueprint'] .section:not(#top)::before {
+  background:
+    radial-gradient(120% 70% at 10% 0%, rgba(233, 231, 224, 0.86), rgba(233, 231, 224, 0) 60%),
+    linear-gradient(
+      180deg,
+      rgba(233, 231, 224, 0.9) 0%,
+      rgba(234, 232, 226, 0.32) 26%,
+      rgba(234, 232, 226, 0.26) 64%,
+      rgba(230, 228, 222, 0.9) 100%
+    );
+}
+
+html[data-world='blueprint'] .band {
+  background: linear-gradient(
+    180deg,
+    rgba(233, 231, 224, 0.72) 0%,
+    rgba(233, 231, 224, 0.3) 40%,
+    rgba(231, 229, 222, 0.36) 64%,
+    rgba(230, 228, 221, 0.76) 100%
+  );
+}
+
+html[data-world='blueprint'] .band::before {
+  background: radial-gradient(80% 55% at 78% 6%, rgba(99, 102, 241, 0.14), transparent 62%),
+    radial-gradient(60% 45% at 6% 92%, rgba(168, 85, 247, 0.1), transparent 60%);
+}
+
+/* section header: kicker · rule · counter */
+.s-head {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--gap);
+  color: var(--ink-dim);
+  margin-bottom: clamp(30px, 5vh, 74px);
+  /* the realtime HUD owns the top-right corner for the whole page, so section
+     headers stop before it instead of printing under the dial */
+  padding-right: clamp(0px, 12vw, 168px);
+}
+
+.s-head__rule {
+  display: block;
+  height: 1px;
+  background: var(--line);
+}
+
+.s-title {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-variation-settings: 'wdth' 108, 'wght' 900;
+  font-size: clamp(26px, 3.4vw, 62px);
+  line-height: 0.94;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px
+  ;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* reveal primitives driven by GSAP */
+[data-reveal] {
+  will-change: transform, opacity;
+  opacity: 0;
+  transform: translateY(30px);
+  transition:
+    opacity 0.95s var(--ease-out),
+    transform 1.05s var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 85ms);
+}
+
+[data-reveal].is-in {
+  opacity: 1;
+  transform: none;
+}
+
+.line-mask {
+  display: block;
+  overflow: hidden;
+}
+
+.glitch {
+  position: relative;
+}
+
+.glitch[data-glitch='on']::before,
+.glitch[data-glitch='on']::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.glitch[data-glitch='on']::before {
+  color: var(--cyan);
+  mix-blend-mode: screen;
+  transform: translate3d(-0.06em, 0, 0);
+  opacity: 0.5;
+  clip-path: inset(18% 0 46% 0);
+}
+
+.glitch[data-glitch='on']::after {
+  color: var(--magenta);
+  mix-blend-mode: screen;
+  transform: translate3d(0.06em, 0, 0);
+  opacity: 0.5;
+  clip-path: inset(58% 0 12% 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

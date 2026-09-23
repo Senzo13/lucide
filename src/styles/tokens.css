@@ -1,0 +1,99 @@
+/* ==========================================================================
+   LUCIDE — design tokens
+   Single source of truth for colour, type, rhythm and layering.
+   ========================================================================== */
+
+:root {
+  /* --- surface ---------------------------------------------------------- */
+  --bg-0: #05030f;
+  --bg-1: #0a0722;
+  --bg-2: #150a33;
+  --bg-3: #1d0f45;
+  --black: #000000;
+
+  /* --- accents ---------------------------------------------------------- */
+  --violet: #7c3aed;
+  --violet-bright: #a855f7;
+  --violet-deep: #4c1d95;
+  --magenta: #d946ef;
+  --fuchsia: #f0abfc;
+  --grid-blue: #3a49c9;
+  --grid-blue-soft: rgba(58, 73, 201, 0.55);
+  --cyan: #67e8f9;
+  --orange: #ff6a1a;
+
+  /* --- ink -------------------------------------------------------------- */
+  --ink: #ffffff;
+  --ink-dim: rgba(255, 255, 255, 0.66);
+  --ink-faint: rgba(255, 255, 255, 0.4);
+  --ink-ghost: rgba(255, 255, 255, 0.16);
+
+  /* --- lines / glass ---------------------------------------------------- */
+  --line: rgba(255, 255, 255, 0.16);
+  --line-strong: rgba(255, 255, 255, 0.34);
+  --line-dark: rgba(0, 0, 0, 0.35);
+  --glass: rgba(10, 7, 34, 0.55);
+  --glass-strong: rgba(6, 4, 20, 0.82);
+
+  /* --- type ------------------------------------------------------------- */
+  /* Display face for section headings, the brand lockup and numerals. */
+  --font-display: 'Inter Tight Variable', 'Inter Tight', 'Inter Variable', 'Helvetica Neue', Arial, sans-serif;
+  --font-display-wide: 'Archivo Variable', 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+  /* The giant wordmark uses Inter at 700. Measured against the mockup: this is
+     the closest cut (ink IoU 0.94 on the “E”) and it reproduces the reference
+     metrics almost exactly — width/cap 4.72 vs 4.73 measured on the mockup. */
+  --font-wordmark: 'Inter Variable', 'Inter', 'Helvetica Neue', Arial, sans-serif;
+  --fw-wordmark: 700;
+
+  /* fluid ramp */
+  --fs-mono-xs: clamp(9px, 0.62vw, 11px);
+  --fs-mono: clamp(10px, 0.72vw, 12px);
+  --fs-nav: clamp(14px, 1.05vw, 18px);
+  --fs-body: clamp(14px, 1.02vw, 17px);
+  --fs-lead: clamp(18px, 1.9vw, 34px);
+  --fs-h2: clamp(30px, 4.6vw, 84px);
+  --fs-h1: clamp(48px, 11.5vw, 210px);
+  /* Tuned so the wordmark matches the mockup on both axes at once:
+     cap-height = 25.9% of the viewport height, total width = 69% of its width.
+     At the reference aspect ratio (1512×850) both constraints coincide. */
+  --fs-wordmark: clamp(46px, min(19.2vw, 34.2vh), 420px);
+
+  /* --- rhythm ----------------------------------------------------------- */
+  --pad-x: clamp(18px, 2.6vw, 46px);
+  --gap: clamp(16px, 1.6vw, 28px);
+  --section-y: clamp(88px, 13vh, 190px);
+  --bar-h: clamp(54px, 4.6vw, 66px);
+
+  /* --- layering --------------------------------------------------------- */
+  --z-canvas: 0;
+  --z-shade: 5;
+  /* foreground WebGL layer — the crystal must composite ABOVE the DOM wordmark */
+  --z-fore: 30;
+  --z-content: 20;
+  --z-chrome: 40;
+  --z-menu: 60;
+  --z-cursor: 80;
+  --z-loader: 100;
+
+  /* --- motion ----------------------------------------------------------- */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-io: cubic-bezier(0.65, 0.05, 0.36, 1);
+  --ease-slot: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --dur-fast: 0.24s;
+  --dur: 0.5s;
+  --dur-slow: 0.9s;
+
+  /* pin progress of the hero key visual (0 → 1), written by App.tsx each frame */
+  --hero-p: 0;
+
+  color-scheme: dark;
+}
+
+@media (max-width: 900px) {
+  :root {
+    --fs-wordmark: clamp(48px, 21vw, 190px);
+    --pad-x: 16px;
+  }
+}

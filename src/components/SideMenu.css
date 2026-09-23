@@ -1,0 +1,120 @@
+.side-menu {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-menu);
+  pointer-events: none;
+  visibility: hidden;
+}
+
+.side-menu[data-open='true'] {
+  pointer-events: auto;
+  visibility: visible;
+}
+
+.side-menu__panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: clamp(24px, 4vh, 56px);
+  padding: calc(var(--pad-x) + 46px) var(--pad-x) calc(var(--bar-h) + 30px);
+  background: linear-gradient(180deg, rgba(6, 4, 20, 0.96) 0%, rgba(10, 7, 34, 0.94) 60%, rgba(5, 3, 15, 0.98) 100%);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid var(--line);
+  transform: translateY(-100%);
+  transition: transform 0.75s var(--ease-io);
+}
+
+.side-menu[data-open='true'] .side-menu__panel {
+  transform: translateY(0);
+}
+
+.side-menu__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.side-menu__close {
+  color: var(--ink-dim);
+  transition: color 0.4s var(--ease-out);
+}
+
+.side-menu__close:hover {
+  color: var(--ink);
+}
+
+.side-menu__nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.side-menu__item {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  align-items: baseline;
+  gap: var(--gap);
+  padding: clamp(10px, 1.4vh, 18px) 0;
+  border-bottom: 1px solid var(--line);
+  transition: color 0.4s var(--ease-out), padding-left 0.5s var(--ease-out);
+}
+
+.side-menu__item:hover {
+  color: var(--violet-bright);
+  padding-left: 14px;
+}
+
+.side-menu__index {
+  color: var(--ink-faint);
+}
+
+.side-menu__label {
+  font-size: clamp(28px, 6.4vw, 96px);
+}
+
+.side-menu__arrow {
+  font-size: clamp(20px, 2.4vw, 34px);
+  opacity: 0;
+  transform: translateX(-14px);
+  transition: opacity 0.4s var(--ease-out), transform 0.4s var(--ease-out);
+}
+
+.side-menu__item:hover .side-menu__arrow {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.side-menu__foot {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--gap);
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.side-menu__col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.side-menu__link {
+  font-size: var(--fs-body);
+  color: var(--ink-dim);
+  transition: color 0.35s var(--ease-out);
+}
+
+.side-menu__link:hover {
+  color: var(--ink);
+}
+
+@media (max-width: 780px) {
+  .side-menu__foot {
+    grid-template-columns: 1fr;
+  }
+}
