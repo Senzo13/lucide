@@ -38,6 +38,39 @@ export const ROOM_STEP = 2
 /** seconds the change itself takes */
 const ROOM_FADE = 0.8
 
+/** a mood is a cycle of rooms plus its own tempo — a brand, not a constant */
+export type Mood = {
+  rooms: Room[]
+  /** seconds each colour holds */
+  step: number
+  /** seconds the change itself takes */
+  fade: number
+}
+
+export type MoodOptions = {
+  /** extra rooms, tried in order when a seed has to pick one */
+  rooms?: Room[]
+  step?: number
+  fade?: number
+}
+
+/** a room written by hand: the host's own colours, in its own order */
+export function defineRoom(base: string, panel: string, line: string, major: string, glow: string): Room {
+  return room(base, panel, line, major, glow)
+}
+
+/**
+ * The cycle as a *value*, so a project can hand the wall its own colours
+ * instead of inheriting ours: `createMood({ rooms: MY_ROOMS })`.
+ */
+export function createMood(options: MoodOptions = {}): Mood {
+  return {
+    rooms: options.rooms?.length ? options.rooms : [ROOMS[0]],
+    step: options.step ?? ROOM_STEP,
+    fade: options.fade ?? ROOM_FADE,
+  }
+}
+
 const room = (base: string, panel: string, line: string, major: string, glow: string): Room => ({
   base: new THREE.Color(base),
   panel: new THREE.Color(panel),
@@ -63,6 +96,9 @@ export const ROOMS: Room[] = [
   blackAndWhite(),
 ]
 
+/** the default cycle, as a mood — the one the wall ships with */
+export const DEFAULT_MOOD: Mood = { rooms: ROOMS, step: ROOM_STEP, fade: ROOM_FADE }
+
 const smoothstep = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)))
   return t * t * (3 - 2 * t)
@@ -72,14 +108,15 @@ const smoothstep = (a: number, b: number, x: number) => {
  * Samples the room at `time` (seconds, monotonic) into `out` — call it once
  * per frame with a scratch room, never allocate per frame.
  */
-export function sampleRoom(time: number, out: Room): Room {
+export function sampleMood(mood: Mood, time: number, out: Room): Room {
+  const rooms = mood.rooms.length ? mood.rooms : ROOMS
   const t = Math.max(0, time)
-  const step = Math.floor(t / ROOM_STEP)
-  const local = t - step * ROOM_STEP
-  const k = smoothstep(0, ROOM_FADE, local)
+  const stepped = Math.floor(t / mood.step)
+  const local = t - stepped * mood.step
+  const k = smoothstep(0, mood.fade, local)
   /* the very first step has nothing behind it: the page opens already lit */
-  const from = step === 0 ? ROOMS[0] : ROOMS[(step - 1 + ROOMS.length) % ROOMS.length]
-  const to = ROOMS[step % ROOMS.length]
+  const from = stepped === 0 ? rooms[0] : rooms[(stepped - 1 + rooms.length) % rooms.length]
+  const to = rooms[stepped % rooms.length]
 
   out.base.copy(from.base).lerp(to.base, k)
   out.panel.copy(from.panel).lerp(to.panel, k)
@@ -87,6 +124,11 @@ export function sampleRoom(time: number, out: Room): Room {
   out.major.copy(from.major).lerp(to.major, k)
   out.glow.copy(from.glow).lerp(to.glow, k)
   return out
+}
+
+/** the default cycle (kept as the plain call the site already makes) */
+export function sampleRoom(time: number, out: Room): Room {
+  return sampleMood(DEFAULT_MOOD, time, out)
 }
 
 /** a mutable room for frame loops (never allocated per frame) */

@@ -3,8 +3,8 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import * as THREE from 'three'
 import { ease, pointer } from './pointer'
-import { createRoom, sampleRoom } from './mood'
-import type { Room } from './mood'
+import { DEFAULT_MOOD, createRoom, sampleMood } from './mood'
+import type { Mood, Room } from './mood'
 
 /**
  * The object in front of the wall.
@@ -32,6 +32,10 @@ export type EmblemProps = {
   pull?: number
   /** how much the object answers the cursor's position */
   follow?: number
+  /** where the object stands, in world units (0 = the camera's own line of sight) */
+  lift?: number
+  /** the room's colour cycle: pass the host's own, or keep ours */
+  mood?: Mood
 }
 
 /** how far the surface travels when it ripples, in world units */
@@ -150,7 +154,14 @@ function useGels() {
   return map
 }
 
-export default function Emblem({ shape = 'gem', size = 1, pull = 0.13, follow = 1 }: EmblemProps) {
+export default function Emblem({
+  shape = 'gem',
+  size = 1,
+  pull = 0.13,
+  follow = 1,
+  lift = 0,
+  mood = DEFAULT_MOOD,
+}: EmblemProps) {
   const group = useRef<THREE.Group>(null)
   const hoverRef = useRef(0)
   const idleRef = useRef(0)
@@ -221,7 +232,7 @@ export default function Emblem({ shape = 'gem', size = 1, pull = 0.13, follow = 
 
     /* one slowly turning room relights the object, exactly as it relights the
        wall behind it — the two are never lit by different clocks */
-    sampleRoom(idle, room)
+    sampleMood(mood, idle, room)
     glass.attenuationColor.copy(room.line).lerp(white, 0.5)
     rim.uColor.value.copy(room.major)
     rim.uEdge.value.copy(room.line).lerp(warm, 0.42)
@@ -238,7 +249,7 @@ export default function Emblem({ shape = 'gem', size = 1, pull = 0.13, follow = 
     node.rotation.x = ease(node.rotation.x, pointer.y * (0.08 + turn * 0.9) + Math.sin(idle * 0.26) * 0.05, 3.4, delta)
     node.rotation.y = ease(node.rotation.y, pointer.x * (0.2 + turn * 1.1) + idle * 0.06, 3.4, delta)
     node.rotation.z = Math.sin(idle * 0.19) * 0.04
-    node.position.y = Math.sin(idle * 0.55) * 0.05 + pointer.y * 0.05
+    node.position.y = lift + Math.sin(idle * 0.55) * 0.05 + pointer.y * 0.05
     node.position.x = pointer.x * 0.12
 
     const position = geometry.attributes.position as THREE.BufferAttribute

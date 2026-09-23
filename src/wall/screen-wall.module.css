@@ -1,11 +1,12 @@
 /* --------------------------------------------------------------------------
    The wall as a block of a page: a box that fills its host, a fade at the top
    so the wall has no edge, and the grain of the glass over it.
-   Everything is namespaced under `.screen-wall` — drop the module in, import
-   `screen-wall.css`, and nothing else in your project is touched.
+
+   A CSS module on purpose: it works in Vite and in Next.js alike, and the host
+   never has to import it globally.
    -------------------------------------------------------------------------- */
 
-.screen-wall {
+.wall {
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -15,14 +16,34 @@
   pointer-events: none;
 }
 
-.screen-wall canvas {
+.wall canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
 }
 
+/* Le mur est une passe plein cadre derrière, le verre une autre devant : le mot
+   de l'hôte vit dans la tranche entre les deux. */
+.layer {
+  position: absolute;
+  inset: 0;
+}
+
+.front {
+  z-index: 2;
+}
+
+.slot {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
 /* the fade: the wall dissolves into the page instead of ending on a line */
-.screen-wall__fade {
+.fade {
   position: absolute;
   top: 0;
   left: 0;
@@ -37,7 +58,7 @@
 }
 
 /* the glass the whole frame is seen through */
-.screen-wall__grain {
+.grain {
   position: absolute;
   inset: 0;
   opacity: 0.5;

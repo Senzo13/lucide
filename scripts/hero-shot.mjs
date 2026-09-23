@@ -25,6 +25,9 @@ const clip = process.env.SHOT_CLIP
     })()
   : undefined
 const wait = Number(process.env.SHOT_WAIT ?? 0)
+/* SHOT_SCROLL=end scrolls to the bottom of the page before shooting; a number
+   scrolls to that many pixels (a footer, a section) */
+const scrollTo = process.env.SHOT_SCROLL
 const outDir = `.shots/${label}`
 await mkdir(outDir, { recursive: true })
 
@@ -55,6 +58,17 @@ await page.evaluate(() => {
 await page.mouse.move(756, 300)
 await page.waitForTimeout(1200)
 if (wait) await page.waitForTimeout(wait)
+if (scrollTo) {
+  /* twice: lazy images and hydrated sections grow the page under us, and the
+     bottom of a long page is only really the bottom on the second try */
+  for (let i = 0; i < 2; i += 1) {
+    await page.evaluate((value) => {
+      const y = value === 'end' ? document.documentElement.scrollHeight : Number(value)
+      window.scrollTo({ top: y, behavior: 'instant' })
+    }, scrollTo)
+    await page.waitForTimeout(1400)
+  }
+}
 
 for (let i = 0; i < count; i += 1) {
   await page.waitForTimeout(i === 0 ? 0 : step)

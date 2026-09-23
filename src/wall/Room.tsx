@@ -62,6 +62,13 @@ const fragmentShader = /* glsl */ `
   /* the visitor's cursor, in the frame's own coordinates (0 → 1, y up) */
   uniform vec2  uPointer;
   uniform float uHover;
+  /* how far a host wants the wall to answer: 1 is the studio's own setting, a
+     footer seen from further away can ask for more */
+  uniform float uHoverGain;
+  uniform float uDistort;
+  /* how dark the joint between two screens is: 0.9 in a black room, a quarter
+     of that on a light wall, where a black bezel would read as a cage */
+  uniform float uJoint;
   /* how much of the room's lattice lands on the ground and the ceiling. The
      key visual is a wall of screens and nothing else: under it there is no
      floor grid at all, and the cells only come back deeper in the document. */
@@ -123,8 +130,8 @@ const fragmentShader = /* glsl */ `
     vec2 pdelta = (vUv - uPointer) * vec2(uAspect, 1.0);
     vec2 psq = pdelta * pdelta;
     float pnear = max(abs(pdelta.x), abs(pdelta.y));
-    float lensField = uHover * exp(-pnear * pnear * 18.0);
-    float lensRing = uHover * sin((psq.x + psq.y) * 42.0 - uTime * 2.8) * exp(-(psq.x + psq.y) * 11.0);
+    float lensField = uHover * uDistort * exp(-pnear * pnear * 14.0);
+    float lensRing = uHover * uDistort * sin((psq.x + psq.y) * 42.0 - uTime * 2.8) * exp(-(psq.x + psq.y) * 11.0);
     /* the patch is also a lamp: the cursor wakes the screens it is over, just
        enough to read as attention and never enough to light the room */
     float lensLamp = lensField * 0.5;
@@ -203,7 +210,7 @@ const fragmentShader = /* glsl */ `
         vec2 sc = floor(vec2(u, v) / uCell);
         vec2 sf = fract(vec2(u, v) / uCell);
         float joint = 0.5 - max(abs(sf.x - 0.5), abs(sf.y - 0.5));
-        float jointMask = (1.0 - smoothstep(0.014, 0.055, joint)) * fade;
+        float jointMask = (1.0 - smoothstep(0.014, 0.055, joint)) * fade * uJoint;
         screenJoint = max(screenJoint, jointMask);
         screenGap = max(screenGap, jointMask);
 
@@ -414,6 +421,9 @@ export default function WallRoom({ feed, drive }: WallRoomProps) {
       uGround: { value: 1 },
       uPointer: { value: new THREE.Vector2(0.5, 0.5) },
       uHover: { value: 0 },
+      uHoverGain: { value: 1 },
+      uDistort: { value: 1 },
+      uJoint: { value: 0.9 },
       uScreen: { value: 0 },
       uCutSeed: { value: 0 },
       uScreenCols: { value: feed.columns || SCREEN_COLS },
@@ -443,7 +453,7 @@ export default function WallRoom({ feed, drive }: WallRoomProps) {
     const sheet = u.uSheet.value as number
     hover.current = ease(hover.current, (pointer.inside ? 1 : 0) * (1 - sheet * 0.8), 3.2, delta)
     u.uPointer.value.set((pointer.x + 1) * 0.5, (pointer.y + 1) * 0.5)
-    u.uHover.value = hover.current
+    u.uHover.value = hover.current * (u.uHoverGain.value as number)
 
     driver.current(u, {
       camera: state.camera,
