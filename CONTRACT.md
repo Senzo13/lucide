@@ -45,6 +45,22 @@ fixes". If you need a change elsewhere, note it in your final report instead.
 Every component/section imports its own CSS file next to it
 (`Header.tsx` → `Header.css`). Do not create global stylesheets.
 
+### The wall is a module: `src/wall/**`
+
+`src/wall/` is the **exportable** wall of screens: room shader, feed, envelope,
+colour drift, pointer and the liquid-glass emblem. It is written to be lifted
+out of this project whole — no store, no router, no `src/styles/**`, no
+convention of ours — and it is documented as a drop-in in
+`src/wall/README.md`. `wall.html` + `src/wall/demo.tsx` is a host page that does
+nothing but use it (as a footer background).
+
+The site **consumes** it: `src/three/Backdrop.tsx` writes this document's
+choreography into the module's uniforms through a `RoomDriver`, and
+`src/three/mood.ts` / `src/three/pointer.ts` / `src/three/wall.ts` re-export
+the shared pieces. There is exactly one implementation of the room, of the
+feed and of the room's colour cycle — if you need to change how the wall looks,
+change it in `src/wall/`, never by copying it into `src/three/`.
+
 ## 4. Layering (fixed, do not change)
 
 ```
