@@ -292,17 +292,22 @@ One moment is a **programme** of three beats, picked from the moment's seed:
 
 | channel | what the wall shows |
 | --- | --- |
-| `word` | a run of cells combining into one letter each, written then switched off cell by cell |
+| `word` | a run of cells combining into one letter each, written then switched off letter by letter (the letter size follows what the frame shows) |
 | `mark` | a drawing made of lit squares, appearing then going out one cell at a time |
 | `wave` | a sea: a swell travelling across the band, a breaking crest, foam |
 | `page` | a picture scrolling screen by screen — a photo if one is present, a drawn comic sheet otherwise |
 | `runner` | a little figure running across the wall, jumping the gaps, with something on his heels |
+| `wipe` | the transition between two takes: six gestures drawn at random (checkerboard, tornado, blinds, diagonal, iris, scramble) |
+| `video` | a short muted extract, framed on what the frame shows, played **once** — it ends just before the take does |
+| `mario`, `pac`, `shapes`, `nevomove` | the figures and the advertisement (see `src/wall/README.md`) |
 
 The **written** channels are painted at full canvas resolution and snap from
-take to take (a display that writes holds its frame). The **broadcast** channels
-are painted on a grid of two samples per screen and blown up with smoothing
-off, so the picture is carried by the cells themselves — that is what makes an
-image read as a wall of monitors rather than as a texture laid over one.
+take to take (a display that writes holds its frame), and the **figures** are
+small canvases painted once at screen resolution and placed a screen at a time
+(see `Figure` in `src/wall/feed.ts`). The **broadcast** channels are painted on
+a grid of two samples per screen and blown up with smoothing off, so the picture
+is carried by the cells themselves — that is what makes an image read as a wall
+of monitors rather than as a texture laid over one.
 
 Photos: drop files into `src/assets/feed/` (png/jpg/webp/avif). They are picked
 up automatically and played back through the same cells, panning down the
@@ -310,8 +315,12 @@ image in whole screens. Nothing ships with the site, so the wall falls back to
 the drawn sheet.
 
 Everything the wall *writes* (a word, a drawing, the runner) is centred on the
-seam of the room — column 0 — because that seam is what the camera faces. A
-word written anywhere else is written off screen.
+middle of the frame. The band is deliberately **wider than the field of view**
+(`DESIGN_COLS = 30` against the ~190 screens a footer shows): the wall turns all
+the way around the camera, and a band narrower than the view would put its seam
+in the middle of the picture — an image cut in two, a car read twice. Everything
+that must be seen is laid out against the visible width, which the host passes
+down on every frame.
 
 ### 5.8b The room answers the cursor
 

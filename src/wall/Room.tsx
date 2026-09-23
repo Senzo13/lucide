@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef } from 'react'
+import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { pointer, ease } from './pointer'
@@ -80,6 +80,19 @@ const fragmentShader = /* glsl */ `
   uniform float uCutSeed;
   uniform float uScreenCols;
   uniform float uScreenRows;
+  /* où la bande d'écrans commence, et si c'est le conducteur qui la place.
+     Un pied de page ne montre que quelques rangées du mur : une bande tirée au
+     hasard tombe sous le bord, et le mur a l'air de ne rien diffuser. Le
+     module sait ce que la fenêtre montre — il la place donc lui-même. Hors
+     module (uScreenFit = 0), la bande se tire au sort comme avant. */
+  uniform float uScreenRow;
+  uniform float uScreenFit;
+  /* la longueur d'arc que la bande occupe sur le mur, en unités du monde
+     (uScreenCols × uCell). Le mur s'arrête à ses deux bords : au-delà, c'est le
+     fond de la salle. C'est ce qui fait que le raccord de la bande — l'endroit
+     où sa première colonne touche sa dernière — tombe **derrière** la caméra
+     au lieu de couper l'image au milieu du cadre. */
+  uniform float uWallSpan;
   uniform sampler2D uScreens;
 
   const float CEIL_Y = 6.4;
@@ -185,10 +198,15 @@ const fragmentShader = /* glsl */ `
       {
         float t = uRadius / radial;
         vec3 p = ro + rd * t;
-        float fade = exp(-t * uFogK * 0.85);
         /* arc length around the stadium: rules through the vanishing point */
         float ang = atan(p.x - ro.x, -(p.z - ro.z));
-        float u = ang * uRadius + uWallOff;
+        float fade = exp(-t * uFogK * 0.85);
+        /* wallU court de 0 (le bord gauche de la bande) à uWallSpan (son bord
+           droit) : le milieu du cadre tombe donc pile au milieu de la bande.
+           Hors de ces bornes, il n'y a plus de mur — c'est le fond. */
+        float wallU = ang * uRadius + uWallOff + uWallSpan * 0.5;
+        fade *= step(0.0, wallU) * step(wallU, uWallSpan);
+        float u = wallU;
         float v = p.y;
         /* the cursor bends the wall itself: the arc length and the height of
            the surface under the pointer are pushed away from it, and a gentle
@@ -264,14 +282,16 @@ const fragmentShader = /* glsl */ `
           /* a band of the wall is the video wall; it shows one feed, painted
              on the CPU, and anything it is not showing stays transparent so
              the room underneath is left exactly as it was */
-          float bandTop = floor(mix(-1.0, 3.0, hash11(uCutSeed)));
+          float bandTop = uScreenFit > 0.5
+            ? floor(uScreenRow)
+            : floor(mix(-1.0, 3.0, hash11(uCutSeed)));
           float bandRow = sc.y - bandTop;
           float inBand = step(-0.5, bandRow) * (1.0 - step(uScreenRows - 0.5, bandRow));
           /* the picture slides a little *inside* its cell as well: the glass
              and the image on it do not bend by the same amount, and that
              difference is what makes the pixels read as liquid */
           vec2 inner = sf + pdelta * lensField * 0.24;
-          vec2 shotUv = vec2(mod(sc.x, uScreenCols) + inner.x, bandRow + inner.y) / vec2(uScreenCols, uScreenRows);
+          vec2 shotUv = vec2((sc.x + inner.x) * uCell / uWallSpan, (bandRow + inner.y) / uScreenRows);
           vec4 shot = texture2D(uScreens, shotUv);
           float cover = shot.a * inBand * clamp(fade * 1.7, 0.0, 1.0);
           screenInk = mix(screenInk, shot.rgb, cover);
@@ -428,6 +448,9 @@ export default function WallRoom({ feed, drive }: WallRoomProps) {
       uCutSeed: { value: 0 },
       uScreenCols: { value: feed.columns || SCREEN_COLS },
       uScreenRows: { value: feed.rows || SCREEN_ROWS },
+      uScreenRow: { value: 0 },
+      uScreenFit: { value: 0 },
+      uWallSpan: { value: 1 },
       uScreens: { value: feed.texture },
     }),
     [feed],

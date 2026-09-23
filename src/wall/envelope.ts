@@ -8,9 +8,10 @@
  * seconds from whatever clock you already have, so the room, the emblem and
  * the DOM can all read the same moment without sharing a timer.
  *
- * `createEnvelope` is the standalone version, with its own cadence. A host that
- * already has an event to hang the wall on (a scroll, a click, an API) can use
- * `envelopeCut` alone and publish its own moments.
+ * `createEnvelope` is the standalone version: it decides *when* to speak
+ * (`tick`, on the clock you render with), and the caller decides nothing else.
+ * A host that already has an event to hang the wall on (a scroll, a click, an
+ * API) can use `envelopeCut` alone and publish its own moments.
  */
 
 export type Moment = {
@@ -44,10 +45,28 @@ export type Envelope = {
   phase: (at: number) => number
   /** the moment being played, or null */
   moment: () => Moment | null
+  /**
+   * Advance the schedule *on the caller's clock* — call it once a frame, with
+   * the same clock you hand to `cut` and `phase`.
+   *
+   * This is the whole reason the envelope has no timer of its own: a moment
+   * dated by `performance.now()` and rendered against a canvas clock that
+   * started when the canvas mounted are two different times, and the wall ends
+   * up speaking into the past — a broadcast that never lands. One clock, and
+   * the wall keeps talking.
+   */
+  tick: (at: number) => void
   /** start one now — a chapter change, a click, a qa hook */
-  speak: (word?: string, duration?: number) => void
-  /** schedule the moments from here on */
+  speak: (word?: string, duration?: number, at?: number) => void
+  /** arm the schedule (`at` = the caller's clock if it is already running) */
   start: (at?: number) => void
+  /**
+   * Change les mots et le tempo *sans toucher au moment en cours* : c'est ce
+   * qu'un composant doit appeler quand ses props changent, plutôt que de
+   * refabriquer une enveloppe — une enveloppe neuve repart de zéro, et la
+   * phrase qu'elle préparait n'arrive jamais.
+   */
+  configure: (options: EnvelopeOptions) => void
   /** stop scheduling (a pause, a hidden tab) */
   stop: () => void
 }
@@ -69,22 +88,30 @@ export const envelopeCut = (phase: number) => {
 }
 
 export function createEnvelope(options: EnvelopeOptions = {}): Envelope {
-  const words = options.words?.length ? options.words : ['LUCIDE', 'TEMPS RÉEL', 'SIGNAL']
-  const [min, max] = options.every ?? [10, 17]
-  const duration = options.duration ?? 7.2
+  let words = options.words?.length ? options.words : ['LUCIDE', 'TEMPS RÉEL', 'SIGNAL']
+  let [min, max] = options.every ?? [10, 17]
+  let duration = options.duration ?? 7.2
   const delay = options.delay ?? 2.6
 
   let current: Moment | null = null
   let next = 0
-  let timer = 0
   let step = 0
   let running = false
+  let armed = false
+
+  /* les options vivent ici, pas dans le React qui appelle : le mur peut être
+     rendu cent fois sans que son tempo reparte de zéro */
+  const configure = (options: EnvelopeOptions) => {
+    if (options.words?.length) words = options.words
+    if (options.every) [min, max] = options.every
+    if (typeof options.duration === 'number') duration = options.duration
+  }
 
   const schedule = (at: number) => {
     next = at + min + Math.random() * Math.max(0, max - min)
   }
 
-  const speak = (word?: string, length?: number) => {
+  const speak = (word?: string, length?: number, at = 0) => {
     const text = word ?? words[step % words.length]
     step += 1
     current = {
@@ -92,8 +119,10 @@ export function createEnvelope(options: EnvelopeOptions = {}): Envelope {
       word: text.toUpperCase(),
       seed: Math.random(),
       duration: length ?? duration,
-      startedAt: performance.now() / 1000,
+      /* daté sur l'horloge de l'appelant : celle qui rendra la phrase */
+      startedAt: at,
     }
+    schedule(at)
   }
 
   const phaseAt = (at: number) => {
@@ -105,21 +134,27 @@ export function createEnvelope(options: EnvelopeOptions = {}): Envelope {
     cut: (at) => envelopeCut(phaseAt(at)),
     phase: phaseAt,
     moment: () => current,
+    tick: (at) => {
+      if (!running) return
+      if (!armed) {
+        armed = true
+        schedule(at + delay)
+        return
+      }
+      if (at < next) return
+      speak(undefined, undefined, at)
+    },
     speak,
-    start: (at = performance.now() / 1000) => {
-      if (running) return
+    configure,
+    start: (at) => {
       running = true
-      schedule(at + delay)
-      timer = window.setInterval(() => {
-        const now = performance.now() / 1000
-        if (now < next) return
-        speak()
-        schedule(now)
-      }, 400)
+      if (typeof at === 'number') {
+        armed = true
+        schedule(at + delay)
+      }
     },
     stop: () => {
       running = false
-      window.clearInterval(timer)
     },
   }
 }

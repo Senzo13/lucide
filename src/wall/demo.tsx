@@ -34,10 +34,13 @@ function Demo() {
       <footer className="demo__footer">
         {/* the wall: no tabs, no chrome — a background, a fade, an emblem */}
         <ScreenWall
-          words={['APPS', 'WEBSITE', 'LOGO', 'NEVOLABS']}
+          words={['APPS', 'WEBSITE', 'LOGO']}
           emblem="monogram"
           fade={34}
-          cell={0.8}
+          /* six rangées de seize écrans : la bande remplit la boîte, et chaque
+             figure se dessine à la résolution de l'écran (voir `README.md`) */
+          screenRows={6}
+          cell={1.29}
         />
         <div className="demo__footer-inner">
           <span className="demo__wordmark">NEVOLABS</span>

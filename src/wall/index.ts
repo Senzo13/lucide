@@ -26,7 +26,7 @@ export {
 } from './mood'
 export { pointer, ease, useGlobalPointer } from './pointer'
 
-export type { Feed, FeedChannel, FeedOptions, Sprite } from './feed'
+export type { Feed, FeedChannel, FeedOptions, Figure, Sprite } from './feed'
 export type { Envelope, EnvelopeOptions, Moment } from './envelope'
 export type { Mood, MoodOptions, MoodSpec, Room, RoomSpec } from './mood'
 export type { EmblemProps, EmblemShape } from './Emblem'

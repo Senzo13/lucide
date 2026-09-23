@@ -13,6 +13,21 @@ export const pointer = {
   ty: 0,
   /** false while the cursor is outside the window: the wall stops answering */
   inside: false,
+  /**
+   * L'emprise : le visiteur tient l'objet et le déplace. `x`/`y` sont des
+   * fractions de la demi-boîte (-1 = bord gauche/bas, 1 = bord droit/haut), et
+   * ils reviennent à zéro quand la main lâche — l'objet se repose de lui-même.
+   *
+   * C'est le même geste que la pierre de lucide : on appuie sur l'objet, on le
+   * promène, on le lâche. La souris et le doigt passent par les mêmes
+   * événements de pointeur, donc il n'y a rien à faire de plus pour le tactile.
+   */
+  grab: {
+    /** true pendant que la main tient l'objet */
+    active: false,
+    x: 0,
+    y: 0,
+  },
 }
 
 export function useGlobalPointer() {

@@ -205,6 +205,10 @@ export default function Emblem({
 }: EmblemProps) {
   const group = useRef<THREE.Group>(null)
   const hoverRef = useRef(0)
+  /** 0 → 1 : à quel point l'objet est tenu (voir `pointer.grab`) */
+  const heldRef = useRef(0)
+  /** la rotation que la main imprime à l'objet (elle revient à zéro au lâcher) */
+  const spinRef = useRef(0)
   const idleRef = useRef(0)
   const room = useMemo(() => createRoom(), [])
   const envMap = useGels()
@@ -296,11 +300,42 @@ export default function Emblem({
     const near = reach * reach * (3 - 2 * reach)
     const turn = follow * near
 
-    node.rotation.x = ease(node.rotation.x, pointer.y * (0.08 + turn * 0.9) + Math.sin(idle * 0.26) * 0.05, 3.4, delta)
-    node.rotation.y = ease(node.rotation.y, pointer.x * (0.2 + turn * 1.1) + idle * 0.06, 3.4, delta)
-    node.rotation.z = Math.sin(idle * 0.19) * 0.04
-    node.position.y = lift + Math.sin(idle * 0.55) * 0.05 + pointer.y * 0.05
-    node.position.x = pointer.x * 0.12
+    /* La main : quand le visiteur attrape l'objet (voir `ScreenWall`, qui pose
+       la pastille de prise), l'objet le suit dans la boîte — et il penche dans
+       le sens du geste, comme un objet qu'on tient. Lâché, il revient à sa
+       place : la marque reste au centre du mot. */
+    const held = pointer.grab.active ? 1 : 0
+    heldRef.current = ease(heldRef.current, held, 12, delta)
+    const grabX = pointer.grab.x * state.viewport.width * 0.5
+    const grabY = pointer.grab.y * state.viewport.height * 0.5
+    const grip = heldRef.current
+
+    /* Tenu, l'objet **tourne sur lui-même** : c'est ce qu'on attend d'un bloc
+       qu'on a dans la main, et c'est ce qui manquait — sans ça, on avait
+       l'impression qu'il refusait de bouger. */
+    spinRef.current = ease(spinRef.current, pointer.grab.x * 2.6, grip > 0.01 ? 9 : 3, delta)
+    node.rotation.x = ease(
+      node.rotation.x,
+      pointer.y * (0.08 + turn * 0.9) + Math.sin(idle * 0.26) * 0.05 - pointer.grab.y * 0.6 * grip,
+      3.4,
+      delta,
+    )
+    node.rotation.y = ease(
+      node.rotation.y,
+      pointer.x * (0.2 + turn * 1.1) + idle * 0.06 + spinRef.current,
+      grip > 0.01 ? 9 : 3.4,
+      delta,
+    )
+    node.rotation.z = Math.sin(idle * 0.19) * 0.04 - pointer.grab.x * 0.18 * grip
+    /* tenu, il suit la main **tout de suite** : un objet qu'on tient ne traîne
+       pas derrière le geste */
+    node.position.y = ease(
+      node.position.y,
+      lift + Math.sin(idle * 0.55) * 0.05 + pointer.y * 0.05 + grabY,
+      grip > 0.01 ? 22 : 5,
+      delta,
+    )
+    node.position.x = ease(node.position.x, pointer.x * 0.12 + grabX, grip > 0.01 ? 22 : 5, delta)
 
     const position = geometry.attributes.position as THREE.BufferAttribute
     const array = position.array as Float32Array
@@ -323,6 +358,9 @@ export default function Emblem({
         const dy = by * 0.5 - hy
         offset += hover * pull * Math.exp(-(dx * dx + dy * dy) * 4.2)
       }
+      /* tenu, le bloc travaille plus fort sous la main : la surface suit le
+         geste au lieu de l'attendre */
+      offset += grip * pull * 0.55 * Math.exp(-(bx * 0.5 - hx) * (bx * 0.5 - hx) * 2.4)
       array[i] = bx + normals[i] * offset
       array[i + 1] = by + normals[i + 1] * offset
       array[i + 2] = bz + normals[i + 2] * offset
@@ -337,10 +375,16 @@ export default function Emblem({
     glass.iridescence = 0.22 + hover * 0.26
     glass.clearcoat = 0.4 + hover * 0.4
     glass.envMapIntensity = 1.6 + hover * 0.6
+    /* tenu : le verre s'épaissit et s'éclaire — c'est ce qui fait qu'on sent
+       qu'on tient quelque chose */
+    glass.thickness += grip * 1.4
+    glass.dispersion += grip * 7
+    glass.clearcoat += grip * 0.3
     /* Le verre doit se lire sur le bleu de la bande comme sur une salle noire :
        l'arête porte plus fort, et le cœur donne un milieu au bloc. */
-    rim.uIntensity.value = (1.05 + Math.sin(idle * 1.05) * 0.12 + hover * 0.5) * Math.min(2.4, state.viewport.height / 3.4)
-    core.uIntensity.value = (0.85 + Math.sin(idle * 0.8) * 0.08 + hover * 0.35) * 1.0
+    rim.uIntensity.value =
+      (1.05 + Math.sin(idle * 1.05) * 0.12 + hover * 0.5 + grip * 0.7) * Math.min(2.4, state.viewport.height / 3.4)
+    core.uIntensity.value = (0.85 + Math.sin(idle * 0.8) * 0.08 + hover * 0.35 + grip * 0.5) * 1.0
     core.uCool.value.copy(room.glow).lerp(cool, 0.35)
   })
 

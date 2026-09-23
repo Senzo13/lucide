@@ -33,6 +33,31 @@
   z-index: 2;
 }
 
+/* La pastille de prise, posée autour de l'emblème.
+
+   Le mur ne prend aucun clic — c'est un fond — mais l'objet, lui, se tient : on
+   appuie dessus, on le promène, on le lâche. La pastille est un rond centré sur
+   la place de repos de l'objet, donc *rien d'autre* n'intercepte le geste : à
+   côté, la page défile comme avant (c'est ce que `touch-action: none` protège —
+   il n'est posé que sur la pastille). */
+.grab {
+  position: absolute;
+  left: 50%;
+  top: var(--grab-y, 50%);
+  width: min(46%, 62vh);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  border-radius: 50%;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+}
+
+.grab[data-held='true'] {
+  cursor: grabbing;
+}
+
 .slot {
   position: absolute;
   inset: 0;
@@ -42,17 +67,33 @@
   pointer-events: none;
 }
 
-/* the fade: the wall dissolves into the page instead of ending on a line */
+/* the fade: the wall dissolves into the page instead of ending on a line.
+
+   Two things at once. The curve is *long and bottom-light* — a short fade cuts
+   the top rows of cells, a long one lets them climb into the page and gain
+   density as they go. And it is an **arc**: the gradient is radial, centred
+   above the frame, so the haze plunges in the middle and lifts at the sides.
+   A linear gradient cut the band on a straight line; this one curves, and the
+   cells are dimmer the higher they climb, which is what makes the wall look
+   like it is fading *into* the page rather than stopping under a band.
+
+   It is drawn *between* the wall and whatever the host puts in the slot, so a
+   host's wordmark is never veiled by it. */
 .fade {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   height: var(--wall-fade, 26%);
-  background: linear-gradient(
-    to bottom,
+  background: radial-gradient(
+    90% 100% at 50% -10%,
     var(--wall-fade-color, #060607) 0%,
-    color-mix(in srgb, var(--wall-fade-color, #060607) 70%, transparent) 45%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 96%, transparent) 30%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 82%, transparent) 46%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 62%, transparent) 62%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 38%, transparent) 76%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 16%, transparent) 88%,
+    color-mix(in srgb, var(--wall-fade-color, #060607) 4%, transparent) 96%,
     transparent 100%
   );
 }
