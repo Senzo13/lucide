@@ -4,7 +4,7 @@ import WallRoom, { type RoomDriver } from './Room'
 import Emblem, { type EmblemShape } from './Emblem'
 import { createEnvelope, type Envelope } from './envelope'
 import { createFeed, type Feed, type FeedChannel, type Sprite } from './feed'
-import { createMood, createRoom, sampleMood, type Mood, type MoodOptions } from './mood'
+import { createMood, createRoom, moodFromSpec, sampleMood, type Mood, type MoodOptions, type MoodSpec } from './mood'
 import { useGlobalPointer } from './pointer'
 import styles from './screen-wall.module.css'
 
@@ -64,8 +64,11 @@ export type ScreenWallProps = {
   emblemScale?: number
   /** how dark the joint between two screens is (0.9 in a dark room) */
   joint?: number
-  /** the room's colour cycle — pass the brand's own rooms, or keep ours */
-  mood?: MoodOptions
+  /**
+   * Le cycle de couleurs de la marque : soit des couleurs écrites en clair
+   * (`MoodSpec`, sans `three`), soit un cycle déjà construit.
+   */
+  mood?: MoodSpec | MoodOptions
   /** device pixel ratio cap: `[1, 2]` by default, lower for a cheaper frame */
   dpr?: [number, number] | number
   /** false freezes the frame — a host that knows the wall is off screen */
@@ -124,7 +127,10 @@ export default function ScreenWall({
 }: ScreenWallProps) {
   const feed: Feed = useMemo(() => createFeed({ channels, runner, chaser, photos }), [channels, runner, chaser, photos])
   const room = useMemo(() => createRoom(), [])
-  const cycle: Mood = useMemo(() => createMood(mood), [mood])
+  const cycle: Mood = useMemo(
+    () => (mood && 'rooms' in mood ? moodFromSpec(mood as MoodSpec) : createMood(mood as MoodOptions)),
+    [mood],
+  )
   const palette = useMemo(() => footerPalette(cell, intensity), [cell, intensity])
   const envelope: Envelope = useMemo(() => createEnvelope({ words, every, duration }), [words, every, duration])
   const lastMoment = useRef(0)
@@ -197,18 +203,23 @@ export default function ScreenWall({
 
   return (
     <div className={className ? `${styles.wall} ${className}` : styles.wall} style={{ ['--wall-fade' as string]: `${fade}%` }}>
-      <Canvas
-        className={styles.layer}
+      {/* Chaque toile a son propre conteneur positionné : compter sur le
+          `className` de `<Canvas>` ne suffit pas (le wrapper interne de R3F
+          reste dans le flux, et la seconde toile partait alors sous la
+          première — donc hors du cadre). */}
+      <div className={styles.layer}>
+        <Canvas
         dpr={dpr}
         frameloop={active ? 'always' : 'never'}
         gl={{ antialias: true, powerPreference: 'high-performance', alpha: true }}
         camera={{ position: [0, 0.55, 6], fov: 54, near: 0.1, far: 90 }}
         style={{ pointerEvents: 'none' }}
-      >
-        <Suspense fallback={null}>
-          <WallRoom feed={feed} drive={drive} />
-        </Suspense>
-      </Canvas>
+        >
+          <Suspense fallback={null}>
+            <WallRoom feed={feed} drive={drive} />
+          </Suspense>
+        </Canvas>
+      </div>
 
       {/* The wall has no top edge: it dissolves into the page above. Drawn
           between the two layers, so the host's word is never faded. */}
@@ -218,26 +229,27 @@ export default function ScreenWall({
           the glass — the whole point of the two layers */}
       {children ? <div className={styles.slot}>{children}</div> : null}
 
-      <Canvas
-        className={`${styles.layer} ${styles.front}`}
-        dpr={dpr}
-        frameloop={active ? 'always' : 'never'}
-        gl={{ antialias: true, powerPreference: 'high-performance', alpha: true }}
-        camera={{ position: [0, 0.55, 6], fov: 54, near: 0.1, far: 90 }}
-        style={{ pointerEvents: 'none' }}
-      >
-        <Suspense fallback={null}>
-          <ambientLight intensity={0.5} />
-          <FittedEmblem
-            shape={emblem}
-            pull={pull}
-            follow={follow}
-            center={emblemCenter}
-            scale={emblemScale}
-            mood={cycle}
-          />
-        </Suspense>
-      </Canvas>
+      <div className={`${styles.layer} ${styles.front}`}>
+        <Canvas
+          dpr={dpr}
+          frameloop={active ? 'always' : 'never'}
+          gl={{ antialias: true, powerPreference: 'high-performance', alpha: true }}
+          camera={{ position: [0, 0.55, 6], fov: 54, near: 0.1, far: 90 }}
+          style={{ pointerEvents: 'none' }}
+        >
+          <Suspense fallback={null}>
+            <ambientLight intensity={0.5} />
+            <FittedEmblem
+              shape={emblem}
+              pull={pull}
+              follow={follow}
+              center={emblemCenter}
+              scale={emblemScale}
+              mood={cycle}
+            />
+          </Suspense>
+        </Canvas>
+      </div>
 
       <div className={styles.grain} aria-hidden="true" />
     </div>
@@ -265,7 +277,12 @@ function FittedEmblem({
   mood: Mood
 }) {
   const height = useThree((s) => s.viewport.height)
-  const size = Math.min(2.1, Math.max(0.5, height * 0.27 * scale))
+  const width = useThree((s) => s.viewport.width)
+  /* L'emblème se mesure à la *boîte*, pas à la caméra : sur un écran étroit, la
+     hauteur visible est la même mais la largeur ne l'est pas — sans ce frein, le
+     N d'un pied de page mobile prenait toute la bande et écrasait le mot. */
+  const basis = Math.min(height, width * 0.28)
+  const size = Math.min(2.1, Math.max(0.4, basis * 0.27 * scale))
   /* the camera sits half a unit above the origin and looks straight ahead, so
      the box's centre is y = 0.55: this is where the object has to stand to
      land on the fraction the host asked for */

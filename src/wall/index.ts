@@ -13,12 +13,22 @@ export { default as WallRoom } from './Room'
 export { default as Emblem } from './Emblem'
 export { createFeed, SCREEN_COLS, SCREEN_ROWS } from './feed'
 export { createEnvelope, envelopeCut } from './envelope'
-export { createMood, createRoom, defineRoom, sampleMood, sampleRoom, DEFAULT_MOOD, ROOMS, ROOM_STEP } from './mood'
+export {
+  createMood,
+  createRoom,
+  defineRoom,
+  moodFromSpec,
+  sampleMood,
+  sampleRoom,
+  DEFAULT_MOOD,
+  ROOMS,
+  ROOM_STEP,
+} from './mood'
 export { pointer, ease, useGlobalPointer } from './pointer'
 
 export type { Feed, FeedChannel, FeedOptions, Sprite } from './feed'
 export type { Envelope, EnvelopeOptions, Moment } from './envelope'
-export type { Mood, MoodOptions, Room } from './mood'
+export type { Mood, MoodOptions, MoodSpec, Room, RoomSpec } from './mood'
 export type { EmblemProps, EmblemShape } from './Emblem'
 export type { RoomDriver, RoomFrame, WallRoomProps } from './Room'
 export type { ScreenWallProps } from './ScreenWall'

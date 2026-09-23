@@ -71,6 +71,45 @@ const RIM_FRAG = /* glsl */ `
   }
 `
 
+/**
+ * The light *inside* the block.
+ *
+ * A piece of glass on its own is a hole in the picture: what makes it read is
+ * the light it is holding. This layer sits just inside the body and paints that
+ * light — deep at the base, white at the top — so the object has a middle even
+ * against a colour it cannot refract.
+ */
+const CORE_VERT = /* glsl */ `
+  varying vec3 vPos;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  void main() {
+    vPos = position;
+    vNormal = normalize(normalMatrix * normal);
+    vec4 mv = modelViewMatrix * vec4(position, 1.0);
+    vView = normalize(-mv.xyz);
+    gl_Position = projectionMatrix * mv;
+  }
+`
+
+const CORE_FRAG = /* glsl */ `
+  precision highp float;
+  varying vec3 vPos;
+  varying vec3 vNormal;
+  varying vec3 vView;
+  uniform vec3  uWarm;
+  uniform vec3  uCool;
+  uniform float uIntensity;
+  void main() {
+    float ndv = abs(dot(normalize(vNormal), normalize(vView)));
+    float edge = pow(1.0 - ndv, 2.1);
+    float body = smoothstep(-1.0, 1.1, vPos.y);
+    vec3 colour = mix(uCool, uWarm, body);
+    float a = (0.12 + edge * 0.55) * uIntensity;
+    gl_FragColor = vec4(colour * a, a);
+  }
+`
+
 const warm = new THREE.Color('#ff4fd8')
 const cool = new THREE.Color('#67e8f9')
 const white = new THREE.Color('#ffffff')
@@ -86,16 +125,18 @@ const white = new THREE.Color('#ffffff')
  * letter means another layout of bars here; nothing else in the module cares.
  */
 function monogramGeometry(): THREE.BufferGeometry {
-  const stem = 0.26
-  const height = 1.7
-  const width = 0.9
-  const depth = 0.42
+  /* Des barres franches : un N doit se lire avant d'être joli. Montants épais,
+     barre diagonale aussi large qu'eux, lettre plus haute que large. */
+  const stem = 0.36
+  const height = 2.05
+  const width = 1.06
+  const depth = 0.5
   const left = new THREE.BoxGeometry(stem, height, depth, 3, 10, 3)
   left.translate(-(width / 2 - stem / 2), 0, 0)
   const right = new THREE.BoxGeometry(stem, height, depth, 3, 10, 3)
   right.translate(width / 2 - stem / 2, 0, 0)
 
-  const diagonal = new THREE.BoxGeometry(stem * 0.86, Math.hypot(width - stem, height) * 0.94, depth * 0.94, 3, 12, 3)
+  const diagonal = new THREE.BoxGeometry(stem, Math.hypot(width - stem, height) * 1.02, depth * 0.92, 3, 12, 3)
   diagonal.rotateZ(-Math.atan2(width - stem, height))
 
   const geometry = mergeGeometries([left, right, diagonal], false) ?? left
@@ -195,7 +236,7 @@ export default function Emblem({
         color: new THREE.Color('#f6f6f6'),
         envMapIntensity: 1.6,
         transparent: true,
-        opacity: 0.6,
+        opacity: 0.72,
         side: THREE.DoubleSide,
       }),
     [],
@@ -206,6 +247,15 @@ export default function Emblem({
       uColor: { value: new THREE.Color('#f2f2f2') },
       uEdge: { value: new THREE.Color('#fff4ec') },
       uEdgeCool: { value: new THREE.Color('#dde5f1') },
+      uIntensity: { value: 0.9 },
+    }),
+    [],
+  )
+
+  const core = useMemo(
+    () => ({
+      uWarm: { value: new THREE.Color('#ffffff') },
+      uCool: { value: new THREE.Color('#2f6bf6') },
       uIntensity: { value: 0.9 },
     }),
     [],
@@ -264,7 +314,9 @@ export default function Emblem({
         (Math.sin(by * 3.1 + idle * 1.05) * 0.5 +
           Math.sin(bx * 4.2 - idle * 0.75) * 0.3 +
           Math.sin(bz * 3.6 + idle * 0.62) * 0.24) *
-        RIPPLE
+        /* La lettre bouge beaucoup moins que la pierre : sur un N, le même
+           ripple fait perdre la lettre — c'est le verre qui doit vivre. */
+        (shape === 'monogram' ? RIPPLE * 0.2 : RIPPLE)
       let offset = wave
       if (hover > 0.002) {
         const dx = bx * 0.66 - hx
@@ -285,11 +337,26 @@ export default function Emblem({
     glass.iridescence = 0.22 + hover * 0.26
     glass.clearcoat = 0.4 + hover * 0.4
     glass.envMapIntensity = 1.6 + hover * 0.6
-    rim.uIntensity.value = (0.85 + Math.sin(idle * 1.05) * 0.12 + hover * 0.5) * state.viewport.height / 5
+    /* Le verre doit se lire sur le bleu de la bande comme sur une salle noire :
+       l'arête porte plus fort, et le cœur donne un milieu au bloc. */
+    rim.uIntensity.value = (1.05 + Math.sin(idle * 1.05) * 0.12 + hover * 0.5) * Math.min(2.4, state.viewport.height / 3.4)
+    core.uIntensity.value = (0.85 + Math.sin(idle * 0.8) * 0.08 + hover * 0.35) * 1.0
+    core.uCool.value.copy(room.glow).lerp(cool, 0.35)
   })
 
   return (
     <group ref={group} scale={size}>
+      {/* le milieu du bloc : la lumière qu'il tient */}
+      <mesh geometry={geometry} scale={0.94} renderOrder={-1}>
+        <shaderMaterial
+          uniforms={core}
+          vertexShader={CORE_VERT}
+          fragmentShader={CORE_FRAG}
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
       <mesh geometry={geometry} material={glass} renderOrder={0} />
       <mesh geometry={geometry} scale={1.006} renderOrder={2}>
         <shaderMaterial

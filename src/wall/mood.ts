@@ -47,6 +47,26 @@ export type Mood = {
   fade: number
 }
 
+/**
+ * La même chose, en *données* : des couleurs écrites en clair, aucun import de
+ * `three`. C'est la forme que doit prendre le cycle d'une marque côté site —
+ * l'import de `three` resterait alors dans le bundle du premier écran, ce qui
+ * est exactement ce qu'on veut éviter (le mur est chargé à la demande).
+ */
+export type RoomSpec = {
+  base: string
+  panel: string
+  line: string
+  major: string
+  glow: string
+}
+
+export type MoodSpec = {
+  rooms: RoomSpec[]
+  step?: number
+  fade?: number
+}
+
 export type MoodOptions = {
   /** extra rooms, tried in order when a seed has to pick one */
   rooms?: Room[]
@@ -68,6 +88,15 @@ export function createMood(options: MoodOptions = {}): Mood {
     rooms: options.rooms?.length ? options.rooms : [ROOMS[0]],
     step: options.step ?? ROOM_STEP,
     fade: options.fade ?? ROOM_FADE,
+  }
+}
+
+/** convertit un cycle écrit en clair (hex) en cycle exploitable par le rendu */
+export function moodFromSpec(spec: MoodSpec): Mood {
+  return {
+    rooms: spec.rooms.map((r) => defineRoom(r.base, r.panel, r.line, r.major, r.glow)),
+    step: spec.step ?? ROOM_STEP,
+    fade: spec.fade ?? ROOM_FADE,
   }
 }
 
